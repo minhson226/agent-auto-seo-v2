@@ -1,0 +1,53 @@
+name: 01 - Architecture: Split master spec into phases
+
+on:
+  workflow_dispatch:
+    inputs:
+      master_spec_path:
+        description: 'Path to the PDF master spec file'
+        required: true
+        default: 'docs/master-specs/project-master-spec.pdf'
+      max_phases:
+        description: 'Maximum number of phases to generate'
+        required: false
+        default: '12'
+
+jobs:
+  plan-phases:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pypdf
+
+      - name: Extract PDF to text
+        env:
+          MASTER_SPEC_PATH: ${{ github.event.inputs.master_spec_path }}
+        run: |
+          python scripts/phase_planner/extract_pdf_text.py                 "$MASTER_SPEC_PATH"                 "docs/phase-specs/master-spec.txt"
+
+      - name: Run architecture planner agent (placeholder)
+        run: |
+          echo "==================================================================="
+          echo " Placeholder step: invoke your GitHub Agent here to process"
+          echo " docs/phase-specs/master-spec.txt using the agent defined at"
+          echo " .github/agents/architecture-planner.agent.md"
+          echo
+          echo " Example (pseudo-code, depends on your setup):"
+          echo "   gh agent run architecture-planner"
+          echo " or:"
+          echo "   github-copilot-cli --agent architecture-planner --prompt ... "
+          echo "==================================================================="

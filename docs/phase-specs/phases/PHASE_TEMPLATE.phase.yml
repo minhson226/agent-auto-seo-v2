@@ -1,0 +1,77 @@
+phase:
+  id: "PHASE-XXX"
+  slug: "short-kebab-title"
+  title: "Human readable title"
+
+  summary: |
+    Mô tả ngắn gọn phase này giải quyết phần nào của dự án,
+    nói được ý nghĩa kỹ thuật và business.
+
+  goal: |
+    Định nghĩa trạng thái "xong" cho phase này, càng cụ thể càng tốt.
+
+  from_master_spec:
+    sections:
+      - "SECTION / CLAUSE / PAGE references from master spec"
+
+  scope:
+    included:
+      - "Item 1..."
+      - "Item 2..."
+    excluded:
+      - "Items intentionally out of scope for this phase..."
+
+  dependencies: []
+
+  inputs:
+    - name: "Repository"
+      type: "codebase"
+      location: "."
+
+  outputs:
+    - name: "Deliverable code & config"
+      type: "code"
+      description: "Các file/directory chính dự kiến thay đổi/tạo mới."
+      location_hint: "src/, configs/, .github/workflows/"
+
+  implementation_prompt: |
+    Bạn là senior software engineer đang làm việc trong repository này.
+    Nhiệm vụ: triển khai **{{phase.id}} – {{phase.title}}** theo đặc tả trong file YAML hiện tại.
+
+    BỐI CẢNH:
+    - Dự án tổng thể được mô tả trong master spec (đã được bóc tách thành các phase).
+    - Phase này có slug: {{phase.slug}}.
+    - Scope bao gồm:
+      {{phase.scope.included}}
+    - Scope loại trừ:
+      {{phase.scope.excluded}}
+    - Dependencies:
+      {{phase.dependencies}}
+
+    YÊU CẦU KHI TRIỂN KHAI:
+    1. Đọc kỹ toàn bộ nội dung file phase hiện tại (`phase.*` trong YAML).
+    2. Lập kế hoạch thực hiện (roadmap ngắn) và ghi vào mô tả PR.
+    3. Viết code, test, config theo `outputs` đã mô tả.
+    4. Đảm bảo tất cả **acceptance_criteria** trong phase này đều được đáp ứng.
+    5. Chạy test, ensure test pass. Nếu chưa có test, tự thiết kế test phù hợp.
+    6. Tạo Pull Request gọn gàng, giải thích thay đổi, kèm checklist đã làm.
+
+    GIỚI HẠN:
+    - Không thay đổi các phần nằm ngoài `scope.included`, trừ khi cần refactor nhỏ để build/test pass.
+    - Không mở rộng scope mà không cập nhật lại file phase tương ứng.
+
+    KẾT QUẢ CUỐI:
+    - Code & test đã merge vào nhánh target (sau review).
+    - Acceptance_criteria cho phase này đều đạt.
+
+  acceptance_criteria:
+    - "Các chức năng trong scope hoạt động đúng như mô tả."
+    - "Tất cả test do bạn viết cho phase này đều pass trên CI."
+    - "Không phá vỡ hành vi hiện tại nằm ngoài scope."
+
+  non_goals:
+    - "Refactor toàn bộ hệ thống."
+    - "Thay đổi kiến trúc lớn không được mô tả trong master spec."
+
+  notes:
+    - "Phase template – không dùng trực tiếp, chỉ để guideline."

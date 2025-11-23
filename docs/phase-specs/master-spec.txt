@@ -1,0 +1,2 @@
+# This file will be generated from the PDF master spec.
+# Do not edit manually – it will be overwritten by the workflow.
