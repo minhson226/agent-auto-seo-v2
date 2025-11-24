@@ -1,0 +1,170 @@
+# Auto-SEO Phase Specifications
+
+This directory contains the complete phase-by-phase implementation plan for the Auto-SEO project.
+
+## 📁 Directory Structure
+
+```
+phases/
+├── PHASE_TEMPLATE.phase.yml          # Template for creating new phases
+├── phase-001-infrastructure-foundation.phase.yml
+├── phase-002-core-services.phase.yml
+├── phase-003-keyword-ingestion-mvp.phase.yml
+├── phase-004-keyword-ingestion-automation.phase.yml
+├── phase-005-seo-strategy-mvp.phase.yml
+├── phase-006-seo-strategy-automation.phase.yml
+├── phase-007-content-generation-mvp.phase.yml
+├── phase-008-content-generation-automation.phase.yml
+├── phase-009-seo-scoring-mvp.phase.yml
+├── phase-010-seo-scoring-automation.phase.yml
+├── phase-011-publishing-mvp.phase.yml
+├── phase-012-publishing-automation.phase.yml
+├── phase-013-feedback-analytics-mvp.phase.yml
+├── phase-014-strategic-learning.phase.yml
+├── phase-015-dashboard-ui.phase.yml
+└── phase-016-e2e-integration-testing.phase.yml
+```
+
+## 🎯 How to Use These Files
+
+### For Developers
+
+1. **Start with PLAN_OVERVIEW.md** (parent directory) to understand the overall project structure
+2. **Read VALIDATION_REPORT.md** to see quality metrics and validation results
+3. **Open the phase file** you're assigned to implement
+4. **Follow the implementation_prompt** section for detailed instructions
+5. **Check acceptance_criteria** to know when you're done
+6. **Respect dependencies** - ensure prerequisite phases are complete
+
+### For Project Managers
+
+- Use PLAN_OVERVIEW.md to track overall progress
+- Each phase file contains estimated scope and deliverables
+- Dependencies field shows which phases must complete first
+- Acceptance criteria provide clear completion checkpoints
+
+### For Coding Agents
+
+Each phase file contains:
+- **implementation_prompt**: Detailed Vietnamese instructions with code examples
+- **scope.included**: Exact list of what to implement
+- **scope.excluded**: What NOT to implement (to avoid scope creep)
+- **acceptance_criteria**: Testable conditions for completion
+- **outputs**: Expected deliverables with location hints
+
+## 📋 Phase File Format
+
+Each `.phase.yml` file follows this structure:
+
+```yaml
+phase:
+  id: "PHASE-XXX"
+  slug: "kebab-case-name"
+  title: "Human Readable Title"
+  
+  summary: |
+    Brief description of what this phase does
+  
+  goal: |
+    Clear DONE state definition
+  
+  from_master_spec:
+    sections:
+      - References to master specification sections
+  
+  scope:
+    included:
+      - List of included features
+    excluded:
+      - List of excluded features
+  
+  dependencies:
+    - List of prerequisite phase IDs
+  
+  inputs:
+    - Required inputs from previous phases
+  
+  outputs:
+    - Expected deliverables
+  
+  implementation_prompt: |
+    Detailed implementation instructions in Vietnamese
+    with code examples, architecture details, etc.
+  
+  acceptance_criteria:
+    - Measurable completion criteria
+  
+  non_goals:
+    - Explicitly excluded items
+  
+  notes:
+    - Additional context and tips
+```
+
+## 🔍 Finding Information
+
+### By Module
+
+- **Module 0 (Foundation)**: PHASE-001, PHASE-002
+- **Module 1 (Keywords)**: PHASE-003, PHASE-004
+- **Module 2 (Strategy)**: PHASE-005, PHASE-006
+- **Module 3 (Content)**: PHASE-007, PHASE-008
+- **Module 4 (Scoring)**: PHASE-009, PHASE-010
+- **Module 5 (Publishing)**: PHASE-011, PHASE-012
+- **Module 6 (Analytics)**: PHASE-013, PHASE-014
+- **Integration**: PHASE-015, PHASE-016
+
+### By Development Stage
+
+- **MVP (Stage 1)**: Odd-numbered phases (3, 5, 7, 9, 11, 13)
+- **Automation (Stage 2 & 3)**: Even-numbered phases (4, 6, 8, 10, 12, 14)
+- **Foundation**: PHASE-001, PHASE-002
+- **Integration**: PHASE-015, PHASE-016
+
+## ✅ Validation
+
+All phase files have been validated for:
+- ✅ YAML syntax correctness
+- ✅ Required fields present
+- ✅ No circular dependencies
+- ✅ 100% master spec coverage
+- ✅ Actionable implementation prompts
+- ✅ Measurable acceptance criteria
+
+See `../VALIDATION_REPORT.md` for detailed validation results.
+
+## 📝 Making Changes
+
+If you need to modify a phase:
+
+1. Update the relevant `.phase.yml` file
+2. Ensure all required fields remain present
+3. Update dependencies if phase order changes
+4. Update PLAN_OVERVIEW.md if timeline or structure changes
+5. Re-run validation checks
+6. Update VALIDATION_REPORT.md with any issues found/fixed
+
+## 🚀 Getting Started
+
+**Ready to implement?**
+
+1. Clone the repository
+2. Read `../PLAN_OVERVIEW.md`
+3. Start with PHASE-001
+4. Open `phase-001-infrastructure-foundation.phase.yml`
+5. Follow the `implementation_prompt`
+6. Build until all `acceptance_criteria` pass
+7. Move to next phase
+
+## 📞 Questions?
+
+- Architectural decisions: See master-spec.txt
+- Phase structure: See phase-output-schema.md
+- Overall plan: See PLAN_OVERVIEW.md
+- Quality metrics: See VALIDATION_REPORT.md
+
+---
+
+**Generated by:** architecture-planner agent  
+**Date:** 2025-11-23  
+**Version:** 1.0

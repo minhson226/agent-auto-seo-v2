@@ -1,0 +1,363 @@
+phase:
+  id: "PHASE-004"
+  slug: "keyword-ingestion-automation"
+  title: "Module 1 Stage 2 & 3 - Keyword Ingestion Automation & Self-Learning"
+
+  summary: |
+    Nâng cấp Module 1 lên giai đoạn Automation và Self-Learning.
+    Tích hợp API connectors để tự động kéo keywords từ Ahrefs/SEMrush,
+    tích hợp Google Trends để phát hiện trending keywords,
+    và sử dụng NLP model để tự động phân loại search intent.
+
+  goal: |
+    Hoàn thành các tính năng automation và self-learning cho keyword ingestion:
+    - API connectors cho Ahrefs và SEMrush
+    - Google Trends API integration để phát hiện trending keywords
+    - NLP model (transformers) để tự động classify search intent
+    - Scheduled jobs để tự động pull fresh keyword data
+    - Enhanced keyword enrichment với search volume và difficulty scores
+
+  from_master_spec:
+    sections:
+      - "Page 5: Module 1 - Keyword & Data Ingestion Engine"
+      - "Giai đoạn 2 (Automation): API Connectors tự động kéo từ Ahrefs/SEMrush"
+      - "Giai đoạn 2: Cho phép paste danh sách vào UI"
+      - "Giai đoạn 3 (Self-Learning): Tích hợp Google Trends API"
+      - "Giai đoạn 3: Sử dụng NLP model nội bộ để tự động phân loại Intent"
+
+  scope:
+    included:
+      - "Ahrefs API connector (keyword research, competitor analysis)"
+      - "SEMrush API connector (keyword metrics, related keywords)"
+      - "Google Trends API integration (trending topics detection)"
+      - "NLP-based intent classifier (BERT/DistilBERT fine-tuned)"
+      - "UI paste functionality (paste keywords directly into UI)"
+      - "Scheduled background jobs (daily keyword refresh)"
+      - "Keyword enrichment (search volume, difficulty, CPC)"
+      - "Related keywords discovery"
+      - "Auto-categorization of keywords by topic"
+    excluded:
+      - "Advanced ML models cho keyword suggestion"
+      - "Real-time keyword tracking"
+      - "Competitive intelligence dashboard (để UI phase)"
+
+  dependencies:
+    - "PHASE-001"
+    - "PHASE-002"
+    - "PHASE-003"
+
+  inputs:
+    - name: "Keyword Ingestion Service from PHASE-003"
+      type: "codebase"
+      location: "services/keyword-ingestion/"
+
+  outputs:
+    - name: "API Connector Modules"
+      type: "code"
+      description: "Ahrefs, SEMrush, Google Trends connectors"
+      location_hint: "services/keyword-ingestion/connectors/"
+    - name: "Intent Classification Model"
+      type: "code"
+      description: "NLP model service cho intent classification"
+      location_hint: "services/keyword-ingestion/ml/"
+    - name: "Background Job Scheduler"
+      type: "code"
+      description: "Celery tasks cho automated keyword pulling"
+      location_hint: "services/keyword-ingestion/tasks/"
+    - name: "Updated Database Schema"
+      type: "code"
+      description: "Schema updates cho enriched data"
+      location_hint: "migrations/004_keyword_automation/"
+
+  implementation_prompt: |
+    Bạn là senior ML engineer và backend developer đang làm việc trong repository Auto-SEO.
+
+    Nhiệm vụ: triển khai **PHASE-004 – Keyword Ingestion Automation & Self-Learning**.
+
+    BỐI CẢNH:
+    - Đã có keyword ingestion MVP từ PHASE-003
+    - Phase này thêm automation và AI capabilities
+    - Scope bao gồm:
+      - API connectors (Ahrefs, SEMrush)
+      - Google Trends integration
+      - NLP intent classification
+      - UI paste functionality
+      - Background jobs
+    - Dependencies: PHASE-003
+
+    YÊU CẦU TRIỂN KHAI:
+
+    1. **API Connectors**:
+       
+       A. Ahrefs API Connector:
+       ```python
+       # connectors/ahrefs_connector.py
+       class AhrefsConnector:
+           async def get_keyword_metrics(self, keyword: str):
+               # GET /keywords-explorer/keyword-metrics
+               # Returns: search_volume, keyword_difficulty, cpc, clicks
+           
+           async def get_related_keywords(self, keyword: str, limit=50):
+               # GET /keywords-explorer/related-terms
+           
+           async def get_competitor_keywords(self, domain: str, limit=100):
+               # GET /site-explorer/top-pages
+       ```
+       
+       B. SEMrush API Connector:
+       ```python
+       # connectors/semrush_connector.py
+       class SEMrushConnector:
+           async def get_keyword_overview(self, keyword: str, database='us'):
+               # Phrase Report
+           
+           async def get_related_keywords(self, keyword: str):
+               # Related Keywords Report
+       ```
+       
+       C. Google Trends Connector:
+       ```python
+       # connectors/google_trends_connector.py
+       from pytrends.request import TrendReq
+       
+       class GoogleTrendsConnector:
+           async def get_trending_searches(self, geo='US'):
+               # Daily trending searches
+           
+           async def get_interest_over_time(self, keyword: str):
+               # Interest over time for keyword
+       ```
+
+    2. **Intent Classification với NLP**:
+       
+       Model: DistilBERT fine-tuned for intent classification
+       
+       Classes:
+       - informational (e.g., "how to ...", "what is ...")
+       - commercial (e.g., "best ...", "review ...")
+       - navigational (e.g., brand names, specific sites)
+       - transactional (e.g., "buy ...", "discount ...")
+       
+       ```python
+       # ml/intent_classifier.py
+       from transformers import AutoTokenizer, AutoModelForSequenceClassification
+       
+       class IntentClassifier:
+           def __init__(self):
+               self.model_name = "distilbert-base-uncased"
+               # Load fine-tuned model or use zero-shot classification
+               self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+               self.model = AutoModelForSequenceClassification.from_pretrained(
+                   self.model_name, num_labels=4
+               )
+           
+           async def classify(self, keyword: str) -> Dict[str, float]:
+               """Returns probabilities for each intent class."""
+               inputs = self.tokenizer(keyword, return_tensors="pt", padding=True)
+               outputs = self.model(**inputs)
+               probs = torch.softmax(outputs.logits, dim=-1)
+               return {
+                   'informational': probs[0][0].item(),
+                   'commercial': probs[0][1].item(),
+                   'navigational': probs[0][2].item(),
+                   'transactional': probs[0][3].item()
+               }
+           
+           def get_primary_intent(self, keyword: str) -> str:
+               """Returns the primary intent class."""
+               probs = self.classify(keyword)
+               return max(probs, key=probs.get)
+       ```
+       
+       Alternative: Use zero-shot classification với model như BART
+       
+       ```python
+       from transformers import pipeline
+       
+       classifier = pipeline("zero-shot-classification", 
+                           model="facebook/bart-large-mnli")
+       
+       result = classifier(
+           keyword,
+           candidate_labels=["informational", "commercial", "navigational", "transactional"]
+       )
+       ```
+
+    3. **Background Jobs với Celery**:
+       
+       ```python
+       # tasks/keyword_tasks.py
+       from celery import Celery
+       
+       celery_app = Celery('keyword_tasks', broker='redis://localhost:6379')
+       
+       @celery_app.task
+       async def enrich_keywords_batch(list_id: str):
+           """Enrich keywords với data từ Ahrefs/SEMrush."""
+           keywords = await get_keywords_by_list(list_id)
+           
+           for kw in keywords:
+               # Get metrics from Ahrefs
+               metrics = await ahrefs.get_keyword_metrics(kw.text)
+               
+               # Classify intent
+               intent = await intent_classifier.get_primary_intent(kw.text)
+               
+               # Update keyword
+               await update_keyword(kw.id, {
+                   'search_volume': metrics['search_volume'],
+                   'keyword_difficulty': metrics['keyword_difficulty'],
+                   'intent': intent,
+                   'status': 'processed'
+               })
+           
+           # Publish event
+           await publish_event('keyword.list.enriched', {'list_id': list_id})
+       
+       @celery_app.task
+       async def discover_trending_keywords(workspace_id: str):
+           """Daily job to discover trending keywords from Google Trends."""
+           trends = await google_trends.get_trending_searches()
+           
+           # Create new keyword list
+           list_id = await create_keyword_list(
+               workspace_id=workspace_id,
+               name=f"Trending Keywords {date.today()}",
+               source='google_trends'
+           )
+           
+           # Add keywords
+           for trend in trends:
+               await add_keyword(list_id, trend)
+           
+           # Trigger enrichment
+           enrich_keywords_batch.delay(list_id)
+       
+       @celery_app.task
+       async def pull_competitor_keywords(workspace_id: str, competitor_domain: str):
+           """Pull keywords from competitor."""
+           keywords = await ahrefs.get_competitor_keywords(competitor_domain)
+           
+           list_id = await create_keyword_list(
+               workspace_id=workspace_id,
+               name=f"Competitor: {competitor_domain}",
+               source='ahrefs_competitor'
+           )
+           
+           for kw in keywords:
+               await add_keyword(list_id, kw['keyword'])
+       ```
+
+    4. **Database Schema Updates**:
+       
+       ```sql
+       -- Add columns to keywords table
+       ALTER TABLE keywords
+       ADD COLUMN cpc DECIMAL(10,2),
+       ADD COLUMN clicks INTEGER,
+       ADD COLUMN intent_confidence DECIMAL(5,2),
+       ADD COLUMN trend_score INTEGER,
+       ADD COLUMN last_enriched_at TIMESTAMP;
+       
+       -- Create table for scheduled jobs
+       CREATE TABLE keyword_sync_jobs (
+         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+         workspace_id UUID REFERENCES workspaces(id),
+         job_type VARCHAR(50), -- 'trends', 'competitor', 'enrichment'
+         schedule JSONB, -- cron schedule
+         config JSONB, -- job-specific config (e.g., competitor domain)
+         last_run_at TIMESTAMP,
+         next_run_at TIMESTAMP,
+         status VARCHAR(50) DEFAULT 'active',
+         created_at TIMESTAMP DEFAULT NOW()
+       );
+       ```
+
+    5. **New API Endpoints**:
+       
+       - POST /api/v1/keyword-lists/enrich
+         ```json
+         {
+           "list_id": "uuid",
+           "source": "ahrefs" // or "semrush"
+         }
+         ```
+       
+       - POST /api/v1/keyword-lists/from-trends
+         ```json
+         {
+           "workspace_id": "uuid",
+           "geo": "US",
+           "category": "all"
+         }
+         ```
+       
+       - POST /api/v1/keyword-lists/from-competitor
+         ```json
+         {
+           "workspace_id": "uuid",
+           "competitor_domain": "example.com",
+           "limit": 100
+         }
+         ```
+       
+       - POST /api/v1/keyword-lists/from-paste
+         ```json
+         {
+           "workspace_id": "uuid",
+           "name": "Pasted Keywords",
+           "keywords": ["keyword 1", "keyword 2", ...]
+         }
+         ```
+       
+       - POST /api/v1/keywords/classify-intent
+         ```json
+         {
+           "keyword": "best laptop 2025"
+         }
+         // Response: {"intent": "commercial", "confidence": 0.92}
+         ```
+
+    6. **Celery Configuration**:
+       - Redis as broker and result backend
+       - Scheduled tasks (celery beat):
+         - Daily trends discovery
+         - Weekly keyword enrichment refresh
+       - Worker configuration in K8s
+
+    TECH STACK:
+    - Celery + Redis
+    - Transformers (HuggingFace)
+    - pytrends (Google Trends unofficial API)
+    - API clients for Ahrefs/SEMrush
+
+    KẾT QUẢ CUỐI:
+    - API connectors hoạt động, pull được data từ Ahrefs/SEMrush
+    - Google Trends integration phát hiện trending keywords
+    - Intent classifier tự động classify với accuracy >80%
+    - Background jobs chạy tự động theo schedule
+    - Users có thể paste keywords vào UI
+    - Keyword data được enrich với metrics
+
+  acceptance_criteria:
+    - "Ahrefs connector pull được keyword metrics và related keywords"
+    - "SEMrush connector hoạt động tương tự"
+    - "Google Trends connector phát hiện daily trending searches"
+    - "Intent classifier classify keywords với accuracy >= 80%"
+    - "API paste keywords hoạt động, keywords được process tương tự upload"
+    - "Celery tasks chạy thành công và enrich keywords"
+    - "Scheduled jobs chạy theo lịch (daily trends, weekly enrichment)"
+    - "Database schema updates thành công"
+    - "Tests pass với coverage >= 75%"
+    - "Event keyword.list.enriched được publish"
+
+  non_goals:
+    - "Real-time keyword tracking"
+    - "Advanced ML models cho keyword suggestions"
+    - "Competitor intelligence dashboard UI"
+
+  notes:
+    - "Ahrefs và SEMrush đều có API limits, cần implement rate limiting"
+    - "Google Trends API không chính thức, có thể bị rate limit"
+    - "Intent classification model có thể bắt đầu với zero-shot, sau đó fine-tune"
+    - "Celery beat scheduler cần persistent storage (database)"

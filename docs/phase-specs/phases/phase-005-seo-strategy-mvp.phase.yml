@@ -1,0 +1,146 @@
+phase:
+  id: "PHASE-005"
+  slug: "seo-strategy-mvp"
+  title: "Module 2 MVP - SEO Strategy & Planning Engine"
+
+  summary: |
+    Xây dựng MVP cho Module 2 - SEO Strategy & Planning Engine.
+    Cho phép users thủ công nhóm keywords thành topic clusters bằng UI kéo-thả,
+    tự nhập URL đối thủ, và tạo content plan với priority thủ công.
+
+  goal: |
+    Hoàn thành SEO strategy service với khả năng:
+    - UI kéo-thả để tạo topic clusters
+    - Manual competitor analysis (user nhập URL)
+    - Content plan creation với priority setting
+    - Pillar content và cluster content organization
+
+  from_master_spec:
+    sections:
+      - "Page 5-6: Module 2 - SEO Strategy & Planning Engine"
+      - "Giai đoạn 1 (MVP): Thủ công. UI Kéo-Thả để nhóm keywords"
+      - "Phân tích đối thủ: Thủ công. User tự nhập URL đối thủ"
+      - "Tạo Kế hoạch: User tự tạo Content Plan và set Priority thủ công"
+
+  scope:
+    included:
+      - "Topic Cluster management (CRUD operations)"
+      - "Manual keyword clustering (UI provides drag-drop interface)"
+      - "Competitor URL input và basic analysis"
+      - "Content Plan creation và management"
+      - "Priority setting (High/Medium/Low)"
+      - "Pillar vs Cluster content categorization"
+      - "Database schema cho TopicClusters, ContentPlans"
+      - "APIs cho cluster và plan management"
+    excluded:
+      - "Automatic clustering (TF-IDF, K-Means) - PHASE-006"
+      - "Semantic clustering (embeddings) - PHASE-006"
+      - "Auto competitor discovery - PHASE-006"
+      - "SERP scraping - PHASE-006"
+      - "Predictive ranking model - PHASE-006"
+
+  dependencies:
+    - "PHASE-001"
+    - "PHASE-002"
+    - "PHASE-003"
+
+  inputs:
+    - name: "Keyword data from Module 1"
+      type: "data"
+      location: "keywords table"
+
+  outputs:
+    - name: "SEO Strategy Service"
+      type: "code"
+      location_hint: "services/seo-strategy/"
+    - name: "Database Schemas"
+      type: "code"
+      location_hint: "migrations/005_seo_strategy/"
+    - name: "APIs"
+      type: "code"
+      location_hint: "services/seo-strategy/api/"
+
+  implementation_prompt: |
+    Bạn là senior backend engineer triển khai **PHASE-005 – SEO Strategy MVP**.
+
+    BỐI CẢNH:
+    - Module 2 nhận keywords từ Module 1
+    - MVP tập trung vào manual operations với UI support
+    - Automation sẽ đến PHASE-006
+
+    YÊU CẦU:
+
+    1. **Database Schema**:
+    ```sql
+    CREATE TABLE topic_clusters (
+      id UUID PRIMARY KEY,
+      workspace_id UUID REFERENCES workspaces(id),
+      name VARCHAR(255) NOT NULL,
+      type VARCHAR(50) DEFAULT 'cluster', -- 'pillar' | 'cluster'
+      description TEXT,
+      pillar_cluster_id UUID REFERENCES topic_clusters(id),
+      metadata JSONB,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    CREATE TABLE cluster_keywords (
+      cluster_id UUID REFERENCES topic_clusters(id),
+      keyword_id UUID REFERENCES keywords(id),
+      is_primary BOOLEAN DEFAULT FALSE,
+      PRIMARY KEY (cluster_id, keyword_id)
+    );
+    
+    CREATE TABLE content_plans (
+      id UUID PRIMARY KEY,
+      cluster_id UUID REFERENCES topic_clusters(id),
+      title VARCHAR(500) NOT NULL,
+      priority VARCHAR(20) DEFAULT 'medium', -- 'high' | 'medium' | 'low'
+      target_keywords TEXT[],
+      competitors_data JSONB,
+      status VARCHAR(50) DEFAULT 'draft', -- 'draft' | 'approved' | 'in_progress' | 'completed'
+      estimated_word_count INTEGER,
+      notes TEXT,
+      created_by UUID REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+    ```
+
+    2. **API Endpoints**:
+    - POST /api/v1/topic-clusters
+    - GET /api/v1/topic-clusters?workspace_id=uuid
+    - PUT /api/v1/topic-clusters/{id}
+    - DELETE /api/v1/topic-clusters/{id}
+    - POST /api/v1/topic-clusters/{id}/keywords (add keywords to cluster)
+    - DELETE /api/v1/topic-clusters/{id}/keywords/{keyword_id}
+    - POST /api/v1/content-plans
+    - GET /api/v1/content-plans?workspace_id=uuid&status=draft
+    - PUT /api/v1/content-plans/{id}
+
+    3. **Business Logic**:
+    - Users manually create clusters
+    - Users drag keywords into clusters via UI
+    - Users manually input competitor URLs
+    - Users create content plans with priorities
+    - Event: content.plan.created
+
+    KẾT QUẢ:
+    - Topic clusters CRUD hoạt động
+    - Keywords có thể assign vào clusters
+    - Content plans được tạo với proper fields
+    - Event publishing thành công
+
+  acceptance_criteria:
+    - "Topic clusters CRUD APIs hoạt động đúng"
+    - "Keywords có thể add/remove khỏi clusters"
+    - "Content plans CRUD hoạt động"
+    - "Event content.plan.created được publish"
+    - "Tests pass với coverage >= 75%"
+
+  non_goals:
+    - "Automatic clustering algorithms"
+    - "SERP analysis automation"
+
+  notes:
+    - "UI kéo-thả sẽ được implement ở PHASE-015"
+    - "Phase này chỉ cung cấp APIs, UI sẽ consume APIs"

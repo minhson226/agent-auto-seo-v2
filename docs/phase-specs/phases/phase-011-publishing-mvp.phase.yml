@@ -1,0 +1,86 @@
+phase:
+  id: "PHASE-011"
+  slug: "publishing-mvp"
+  title: "Module 5 MVP - Publishing Engine"
+
+  summary: |
+    MVP publishing với manual copy-paste. User copy HTML từ Dashboard
+    và paste vào WordPress thủ công.
+
+  goal: |
+    Basic publishing workflow với manual operations.
+
+  from_master_spec:
+    sections:
+      - "Page 8-9: Module 5 - Publishing & Linking Engine"
+      - "Giai đoạn 1 (MVP): Copy-Paste. User tự copy HTML và paste vào WP"
+
+  scope:
+    included:
+      - "Article export API (HTML/Markdown)"
+      - "Copy-to-clipboard functionality support"
+      - "Publishing status tracking"
+      - "Database schema: published_posts table"
+    excluded:
+      - "Auto WordPress publishing - PHASE-012"
+      - "Internal linking - PHASE-012"
+
+  dependencies:
+    - "PHASE-007"
+    - "PHASE-009"
+
+  inputs:
+    - name: "Articles from Module 3"
+      type: "data"
+      location: "articles table"
+
+  outputs:
+    - name: "Publishing Service"
+      type: "code"
+      location_hint: "services/publisher/"
+
+  implementation_prompt: |
+    Triển khai **PHASE-011 – Publishing MVP**.
+
+    YÊU CẦU:
+
+    1. **Database Schema**:
+    ```sql
+    CREATE TABLE published_posts (
+      id UUID PRIMARY KEY,
+      article_id UUID REFERENCES articles(id),
+      site_id UUID REFERENCES sites(id),
+      wp_post_id INTEGER,
+      url VARCHAR(500),
+      status VARCHAR(50) DEFAULT 'manual',
+      published_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    ```
+
+    2. **API Endpoints**:
+    - GET /api/v1/articles/{id}/export?format=html
+    - GET /api/v1/articles/{id}/export?format=markdown
+    - POST /api/v1/published-posts (manual record creation)
+      Body: {article_id, site_id, url, wp_post_id}
+
+    3. **Export Formats**:
+    - HTML: Clean HTML ready for WordPress
+    - Markdown: For other platforms
+
+    KẾT QUẢ:
+    - Export API hoạt động
+    - Manual publishing được track
+
+  acceptance_criteria:
+    - "Export HTML hoạt động"
+    - "Export Markdown hoạt động"
+    - "Published posts tracking works"
+    - "Tests pass"
+
+  non_goals:
+    - "Auto publishing"
+    - "Internal linking"
+
+  notes:
+    - "Export cần clean HTML (remove script tags, etc.)"

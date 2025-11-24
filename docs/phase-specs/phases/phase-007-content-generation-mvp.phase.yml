@@ -1,0 +1,155 @@
+phase:
+  id: "PHASE-007"
+  slug: "content-generation-mvp"
+  title: "Module 3 MVP - Smart Content Generation Engine"
+
+  summary: |
+    Xây dựng MVP cho content generation với một LLM model duy nhất (GPT-3.5),
+    prompt cứng, và manual scheduling. Users bấm nút để tạo bài viết.
+
+  goal: |
+    Content generation service có thể tạo bài viết SEO tự động với GPT-3.5.
+
+  from_master_spec:
+    sections:
+      - "Page 6-7: Module 3 - Smart Content Generation Engine"
+      - "Giai đoạn 1 (MVP): Một model duy nhất GPT-3.5-Turbo với prompt cứng"
+      - "Viết bài: Thủ công, user bấm nút 'Viết bài ngay'"
+      - "Nguồn ảnh: Thủ công, user tự upload"
+
+  scope:
+    included:
+      - "Content generation service với OpenAI API"
+      - "Manual article creation trigger (button click)"
+      - "Template-based prompts"
+      - "Article draft storage (HTML/Markdown)"
+      - "Manual image upload"
+      - "Database schema: articles table"
+      - "Event: article.generated"
+    excluded:
+      - "LLM Gateway - PHASE-008"
+      - "Auto scheduling - PHASE-008"
+      - "RAG - PHASE-008"
+      - "Cost optimization router - PHASE-008"
+      - "Auto image generation - PHASE-008"
+
+  dependencies:
+    - "PHASE-002"
+    - "PHASE-005"
+
+  inputs:
+    - name: "Content Plans from Module 2"
+      type: "data"
+      location: "content_plans table"
+
+  outputs:
+    - name: "Content Generation Service"
+      type: "code"
+      location_hint: "services/content-generator/"
+
+  implementation_prompt: |
+    Triển khai **PHASE-007 – Content Generation MVP**.
+
+    YÊU CẦU:
+
+    1. **Database Schema**:
+    ```sql
+    CREATE TABLE articles (
+      id UUID PRIMARY KEY,
+      plan_id UUID REFERENCES content_plans(id),
+      workspace_id UUID REFERENCES workspaces(id),
+      title VARCHAR(500),
+      content TEXT, -- HTML or Markdown
+      status VARCHAR(50) DEFAULT 'draft',
+      ai_model_used VARCHAR(100) DEFAULT 'gpt-3.5-turbo',
+      cost_usd DECIMAL(10,4),
+      word_count INTEGER,
+      metadata JSONB,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+    ```
+
+    2. **Content Generator**:
+    ```python
+    from openai import AsyncOpenAI
+    
+    class ContentGenerator:
+        def __init__(self):
+            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        
+        async def generate_article(self, content_plan):
+            prompt = self._build_prompt(content_plan)
+            
+            response = await self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an SEO content writer."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            
+            content = response.choices[0].message.content
+            cost = self._calculate_cost(response.usage)
+            
+            return {
+                'content': content,
+                'cost': cost,
+                'model': 'gpt-3.5-turbo'
+            }
+        
+        def _build_prompt(self, content_plan):
+            return f"""
+            Write a comprehensive SEO article about: {content_plan.title}
+            
+            Target keywords: {', '.join(content_plan.target_keywords)}
+            Estimated word count: {content_plan.estimated_word_count}
+            
+            Requirements:
+            - Include H1 title with main keyword
+            - Include H2 and H3 subheadings
+            - Naturally incorporate target keywords
+            - Write in an engaging, informative style
+            - Include introduction and conclusion
+            """
+    ```
+
+    3. **API Endpoints**:
+    - POST /api/v1/articles/generate
+      Body: {"plan_id": "uuid"}
+    - GET /api/v1/articles?workspace_id=uuid
+    - GET /api/v1/articles/{id}
+    - PUT /api/v1/articles/{id}
+    - DELETE /api/v1/articles/{id}
+
+    4. **Image Upload**:
+    - POST /api/v1/articles/{id}/images (multipart/form-data)
+    - Store in MinIO/S3
+
+    5. **Event Publishing**:
+    Event: article.generated
+    Payload: {article_id, title, word_count, cost}
+
+    KẾT QUẢ:
+    - Articles được generate với GPT-3.5
+    - Content lưu trong database và object storage
+    - Images có thể upload
+    - Event được publish
+
+  acceptance_criteria:
+    - "Article generation hoạt động với GPT-3.5"
+    - "Content được lưu vào database"
+    - "Cost tracking chính xác"
+    - "Event article.generated được publish"
+    - "Image upload hoạt động"
+    - "Tests pass"
+
+  non_goals:
+    - "Multiple LLM support"
+    - "Auto scheduling"
+    - "RAG"
+
+  notes:
+    - "Prompt template cần tối ưu qua testing"
