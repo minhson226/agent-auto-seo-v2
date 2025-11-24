@@ -1,4 +1,4 @@
-name: "01 - Architecture: Plan phases from PDF (branch + issue)"
+name: "00 - Architecture: Plan phases from PDF (branch + issue)"
 
 on:
   workflow_dispatch:
@@ -29,6 +29,7 @@ jobs:
       - name: "Prepare branch names"
         run: |
           BASE_BRANCH="${{ github.ref_name }}"
+          # Branch dành cho Copilot nên prefix bằng 'copilot/'
           BRANCH_NAME="copilot/phase-plan-${{ github.run_id }}"
 
           echo "BASE_BRANCH=$BASE_BRANCH" >> $GITHUB_ENV
@@ -69,34 +70,31 @@ jobs:
           echo "===== First 60 lines of master-spec.txt ====="
           sed -n '1,60p' docs/phase-specs/master-spec.txt || echo "master-spec.txt not found"
 
-      - name: "Commit extracted spec to branch"
+      - name: "Commit extracted spec to branch (if changed)"
         env:
           BRANCH_NAME: ${{ env.BRANCH_NAME }}
         run: |
           echo "===== Git status before commit ====="
           git status
 
-          if git diff --quiet; then
-            echo "No changes detected after extraction. Nothing to commit."
-            echo "SKIP_ISSUE=true" >> $GITHUB_ENV
-            exit 0
+          # Chỉ commit nếu master-spec.txt có thay đổi
+          if git diff --quiet docs/phase-specs/master-spec.txt; then
+            echo "master-spec.txt has no changes. Skipping commit, but branch will still be pushed and issue created."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git add docs/phase-specs/master-spec.txt
+            git commit -m "chore: extract master spec to text for phase planning"
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add docs/phase-specs/master-spec.txt
-          git commit -m "chore: extract master spec to text for phase planning"
-
       - name: "Push branch"
-        if: env.SKIP_ISSUE != 'true'
         env:
           BRANCH_NAME: ${{ env.BRANCH_NAME }}
         run: |
           git push origin "${BRANCH_NAME}"
 
       - name: "Create issue for architecture-planner agent"
-        if: env.SKIP_ISSUE != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH_NAME: ${{ env.BRANCH_NAME }}
