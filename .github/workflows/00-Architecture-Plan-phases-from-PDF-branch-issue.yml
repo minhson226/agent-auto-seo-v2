@@ -1,0 +1,153 @@
+name: "01 - Architecture: Plan phases from PDF (branch + issue)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      master_spec_path:
+        description: "Path to the PDF master spec file"
+        required: true
+        default: "docs/master-specs/project-master-spec.pdf"
+      max_phases:
+        description: "Maximum number of phases to suggest (for agent)"
+        required: false
+        default: "12"
+
+jobs:
+  plan-phases:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Prepare branch names"
+        run: |
+          BASE_BRANCH="${{ github.ref_name }}"
+          # Đặt tên branch theo rule của Copilot: phải bắt đầu bằng 'copilot/'
+          BRANCH_NAME="copilot/phase-plan-${{ github.run_id }}"
+
+          echo "BASE_BRANCH=$BASE_BRANCH" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+          echo "Base branch: $BASE_BRANCH"
+          echo "New branch : $BRANCH_NAME"
+
+      - name: "Create phase-planning branch"
+        run: |
+          git checkout "${BASE_BRANCH}"
+          git switch -c "${BRANCH_NAME}"
+
+      - name: "Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Install Python dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install pypdf
+
+      - name: "Extract PDF to text"
+        env:
+          MASTER_SPEC_PATH: ${{ github.event.inputs.master_spec_path }}
+        run: |
+          python scripts/phase_planner/extract_pdf_text.py \
+            "$MASTER_SPEC_PATH" \
+            "docs/phase-specs/master-spec.txt"
+
+      - name: "Show extracted file info"
+        run: |
+          echo "===== Listing docs/phase-specs directory ====="
+          ls -lah docs/phase-specs || echo "docs/phase-specs not found"
+
+          echo ""
+          echo "===== First 60 lines of master-spec.txt ====="
+          sed -n '1,60p' docs/phase-specs/master-spec.txt || echo "master-spec.txt not found"
+
+      - name: "Commit extracted spec to branch"
+        env:
+          BRANCH_NAME: ${{ env.BRANCH_NAME }}
+        run: |
+          echo "===== Git status before commit ====="
+          git status
+
+          if git diff --quiet; then
+            echo "No changes detected after extraction. Nothing to commit."
+            echo "SKIP_ISSUE=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add docs/phase-specs/master-spec.txt
+          git commit -m "chore: extract master spec to text for phase planning"
+
+      - name: "Push branch"
+        if: env.SKIP_ISSUE != 'true'
+        env:
+          BRANCH_NAME: ${{ env.BRANCH_NAME }}
+        run: |
+          git push origin "${BRANCH_NAME}"
+
+      - name: "Create issue for architecture-planner agent"
+        if: env.SKIP_ISSUE != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ env.BRANCH_NAME }}
+          BASE_BRANCH: ${{ env.BASE_BRANCH }}
+          MAX_PHASES: ${{ github.event.inputs.max_phases }}
+        run: |
+          echo "Creating issue to delegate work to Copilot + architecture-planner..."
+
+          TITLE="Phase planning from PDF (run ${{ github.run_id }})"
+
+          BODY=$(cat << EOF
+@copilot @architecture-planner
+
+Please run the full **phase-planning** workflow for this project.
+
+**Context**
+
+- Base branch: \`${BASE_BRANCH}\`
+- Working branch for this task: \`${BRANCH_NAME}\`
+- Master spec text: \`docs/phase-specs/master-spec.txt\`
+- Phase schema: \`docs/phase-specs/phase-output-schema.md\`
+- Phase template: \`docs/phase-specs/phases/PHASE_TEMPLATE.phase.yml\`
+- Max phases (soft limit): \`${MAX_PHASES}\`
+
+**Task**
+
+1. Read and understand \`docs/phase-specs/master-spec.txt\`.
+2. Design a set of implementation phases for the whole project.
+3. For each phase, create a \`.phase.yml\` file under:
+   - \`docs/phase-specs/phases/phase-XXX-<slug>.phase.yml\`
+   following the schema and template.
+4. Generate:
+   - \`docs/phase-specs/PLAN_OVERVIEW.md\` — list of all phases, high-level overview.
+   - \`docs/phase-specs/VALIDATION_REPORT.md\` — results of self-validation.
+5. Run self-validation:
+   - Ensure each phase has all required fields.
+   - Ensure dependencies are valid and non-cyclical.
+   - Ensure each phase is clear enough for a coding agent to implement it end-to-end.
+
+**Important**
+
+- Work on top of branch \`${BRANCH_NAME}\`.
+- Create a pull request targeting \`${BASE_BRANCH}\` with your changes.
+- If you need to adjust the number or shape of phases for clarity, do so and document it in \`VALIDATION_REPORT.md\`.
+
+EOF
+)
+
+          # tạo issue và assign cho Copilot coding agent
+          gh issue create \
+            --title "$TITLE" \
+            --body "$BODY" \
+            --assignee "copilot"
