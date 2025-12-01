@@ -1,0 +1,11 @@
+# Auth Service Requirements
+# Placeholder - to be implemented in PHASE-002
+
+fastapi>=0.104.0
+uvicorn>=0.24.0
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+python-jose>=3.3.0
+passlib>=1.7.4
+bcrypt>=4.1.0
+pydantic>=2.5.0
