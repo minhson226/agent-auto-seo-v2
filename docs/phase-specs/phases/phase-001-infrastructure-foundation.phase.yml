@@ -1,0 +1,216 @@
+phase:
+  id: "PHASE-001"
+  slug: "infrastructure-foundation"
+  title: "Infrastructure Foundation & Project Setup"
+
+  summary: |
+    Thiết lập nền tảng hạ tầng cơ bản cho toàn bộ dự án Auto-SEO.
+    Phase này tạo ra skeleton project, cấu hình Kubernetes, Docker, CI/CD,
+    và thiết lập các dịch vụ cơ sở dữ liệu (PostgreSQL, Redis, ClickHouse, MinIO).
+    Đây là phase tiền đề bắt buộc cho tất cả các module tiếp theo.
+
+  goal: |
+    Hoàn thành việc thiết lập hạ tầng kỹ thuật cơ bản, bao gồm:
+    - Repository structure với monorepo hoặc polyrepo setup
+    - Docker containerization cho tất cả services
+    - Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets)
+    - CI/CD pipeline cơ bản với GitHub Actions
+    - Database setup scripts và migrations
+    - Monitoring stack cơ bản (Prometheus, Grafana)
+    - Development environment setup documentation
+
+  from_master_spec:
+    sections:
+      - "Page 3-4: Module 0 - Technical Foundation"
+      - "Page 3: 3.1. Technology Stack"
+      - "Page 4: 3.3. Infrastructure & DevOps"
+      - "Containerization: Docker"
+      - "Orchestration: Kubernetes"
+      - "CI/CD: GitHub Actions"
+      - "Storage: MinIO hoặc AWS S3"
+      - "Monitoring: Prometheus, Grafana, Loki"
+
+  scope:
+    included:
+      - "Tạo cấu trúc thư mục dự án (monorepo hoặc polyrepo)"
+      - "Cấu hình Docker và docker-compose cho local development"
+      - "Tạo Kubernetes manifests cho tất cả core services"
+      - "Setup PostgreSQL (v15+) với schema migrations"
+      - "Setup Redis cho caching và session"
+      - "Setup ClickHouse cho analytics (Module 6)"
+      - "Setup MinIO (S3-compatible) cho object storage"
+      - "Cấu hình GitHub Actions CI/CD pipeline"
+      - "Setup Prometheus + Grafana cho monitoring"
+      - "Tạo README và development setup guide"
+      - "Environment variables management (.env templates)"
+    excluded:
+      - "Triển khai các business logic của các module (để phase sau)"
+      - "Setup production cluster (chỉ tập trung vào dev/staging)"
+      - "Advanced security hardening (sẽ làm dần trong các phase sau)"
+      - "Event Bus setup (RabbitMQ/Kafka) - sẽ làm ở PHASE-002"
+
+  dependencies: []
+
+  inputs:
+    - name: "Repository"
+      type: "codebase"
+      location: "."
+      description: "Empty/minimal repository hiện tại"
+
+  outputs:
+    - name: "Project structure"
+      type: "code"
+      description: "Cấu trúc thư mục và file skeleton cho toàn bộ dự án"
+      location_hint: "services/, infrastructure/, k8s/, docker-compose.yml"
+    - name: "Docker configuration"
+      type: "config"
+      description: "Dockerfiles và docker-compose.yml"
+      location_hint: "*/Dockerfile, docker-compose.yml, docker-compose.dev.yml"
+    - name: "Kubernetes manifests"
+      type: "config"
+      description: "K8s deployments, services, configmaps, secrets"
+      location_hint: "k8s/, infrastructure/k8s/"
+    - name: "Database schemas"
+      type: "code"
+      description: "Migration scripts cho PostgreSQL"
+      location_hint: "migrations/, db/"
+    - name: "CI/CD pipeline"
+      type: "config"
+      description: "GitHub Actions workflows"
+      location_hint: ".github/workflows/"
+    - name: "Documentation"
+      type: "docs"
+      description: "Setup guide, architecture diagrams"
+      location_hint: "docs/setup/, docs/architecture/, README.md"
+
+  implementation_prompt: |
+    Bạn là senior DevOps engineer và software architect đang làm việc trong repository Auto-SEO.
+
+    Nhiệm vụ của bạn là triển khai **PHASE-001 – Infrastructure Foundation & Project Setup**
+    theo đặc tả trong file YAML này.
+
+    BỐI CẢNH:
+    - Đây là phase đầu tiên của dự án Auto-SEO - một nền tảng tự động hóa Content & SEO
+    - Dự án sử dụng kiến trúc Microservices, Event-Driven, Cloud-Native
+    - Technology stack: Python (chủ đạo), Node.js, Go, PostgreSQL, Redis, ClickHouse, MinIO
+    - Phase này có slug: infrastructure-foundation
+    - Scope bao gồm:
+      - Tạo cấu trúc thư mục dự án
+      - Docker và docker-compose setup
+      - Kubernetes manifests
+      - Database setup (PostgreSQL, Redis, ClickHouse, MinIO)
+      - CI/CD với GitHub Actions
+      - Monitoring stack (Prometheus, Grafana)
+      - Documentation
+    - Scope loại trừ:
+      - Business logic của các module
+      - Production cluster setup
+      - Event Bus (sẽ làm ở PHASE-002)
+    - Dependencies: Không có (đây là phase đầu tiên)
+
+    YÊU CẦU KHI TRIỂN KHAI:
+
+    1. **Project Structure**:
+       - Quyết định sử dụng monorepo hoặc polyrepo (đề xuất: monorepo với structure rõ ràng)
+       - Tạo các thư mục chính: services/, infrastructure/, k8s/, docs/, scripts/
+       - Mỗi service sẽ có folder riêng trong services/
+
+    2. **Docker Setup**:
+       - Tạo Dockerfile cho từng service (có thể để skeleton/placeholder)
+       - Tạo docker-compose.yml cho local development với tất cả databases
+       - Đảm bảo tất cả services có thể chạy local với `docker-compose up`
+
+    3. **Kubernetes Manifests**:
+       - Tạo k8s manifests cho: PostgreSQL, Redis, ClickHouse, MinIO
+       - Sử dụng StatefulSets cho databases
+       - Tạo Services, ConfigMaps, Secrets (sử dụng sealed-secrets hoặc external-secrets)
+       - Tạo Namespaces cho dev/staging/production
+
+    4. **Database Setup**:
+       - PostgreSQL: Tạo migration framework (Alembic cho Python hoặc Flyway)
+       - Setup initial schema với các tables cơ bản (users, workspaces, sites)
+       - Redis: Config file cơ bản
+       - ClickHouse: Setup database và schema cho analytics
+       - MinIO: Bucket initialization scripts
+
+    5. **CI/CD Pipeline**:
+       - GitHub Actions workflow cho:
+         - Lint và test code
+         - Build Docker images
+         - Push images to registry
+         - Deploy to staging/production (skeleton)
+       - Setup Docker registry (GitHub Container Registry hoặc DockerHub)
+
+    6. **Monitoring**:
+       - Deploy Prometheus operator
+       - Setup Grafana với dashboards cơ bản
+       - Configure service discovery
+       - Setup Loki cho log aggregation (optional)
+
+    7. **Documentation**:
+       - README.md với project overview
+       - docs/setup/local-development.md: Hướng dẫn setup local
+       - docs/architecture/overview.md: Kiến trúc tổng thể
+       - docs/deployment/kubernetes.md: Hướng dẫn deploy lên K8s
+       - Environment variables documentation
+
+    8. **Testing**:
+       - Verify tất cả services có thể start
+       - Verify databases có thể kết nối
+       - Verify CI/CD pipeline chạy thành công
+
+    TECH STACK DETAILS:
+    - PostgreSQL: v15+, với pgvector extension
+    - Redis: Latest stable
+    - ClickHouse: Latest stable
+    - MinIO: Latest stable
+    - Kubernetes: v1.27+
+    - Docker: Latest stable
+
+    BEST PRACTICES:
+    - Sử dụng environment variables cho tất cả config
+    - Không hardcode secrets, sử dụng K8s Secrets
+    - Tạo .env.example cho development
+    - Sử dụng health checks cho tất cả containers
+    - Apply resource limits trong K8s manifests
+    - Use multi-stage Docker builds để giảm image size
+
+    GIỚI HẠN:
+    - Không implement business logic của bất kỳ module nào
+    - Không setup RabbitMQ/Kafka (sẽ làm ở PHASE-002)
+    - Không triển khai production cluster thực tế (chỉ manifests)
+
+    KẾT QUẢ CUỐI:
+    - Developer có thể clone repo và chạy `docker-compose up` để có full stack local
+    - CI/CD pipeline chạy thành công và build được Docker images
+    - Kubernetes manifests valid và có thể apply lên cluster
+    - Documentation đầy đủ để onboard developers mới
+    - Tất cả acceptance criteria được đáp ứng
+
+  acceptance_criteria:
+    - "Project structure rõ ràng, dễ navigate với README đầy đủ"
+    - "docker-compose up thành công, tất cả databases chạy được"
+    - "PostgreSQL có thể kết nối và migrations chạy thành công"
+    - "Redis, ClickHouse, MinIO đều accessible từ local"
+    - "Kubernetes manifests valid (kubectl apply --dry-run thành công)"
+    - "GitHub Actions workflow chạy thành công và build được images"
+    - "Prometheus + Grafana accessible và có basic dashboards"
+    - "Documentation đầy đủ: setup guide, architecture, deployment guide"
+    - "Environment variables được document đầy đủ với .env.example"
+    - "Health checks hoạt động cho tất cả services"
+
+  non_goals:
+    - "Implement bất kỳ business logic nào của các module"
+    - "Setup production Kubernetes cluster thực tế"
+    - "Advanced security features (mTLS, network policies, etc.)"
+    - "Performance tuning cho databases"
+    - "Setup RabbitMQ hoặc Kafka Event Bus"
+    - "Implement API Gateway hoặc Auth service (sẽ làm ở PHASE-002)"
+
+  notes:
+    - "Phase này là foundation quan trọng nhất, cần review kỹ trước khi merge"
+    - "Có thể tham khảo các microservices boilerplate templates"
+    - "Nên sử dụng Helm charts cho Kubernetes nếu team quen thuộc"
+    - "MinIO có thể thay thế bằng AWS S3 cho production, nhưng cần compatible API"
+    - "ClickHouse có thể thay thế bằng BigQuery nếu dùng GCP"
+    - "Cân nhắc sử dụng Skaffold hoặc Tilt cho local K8s development"

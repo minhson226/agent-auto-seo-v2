@@ -1,0 +1,160 @@
+phase:
+  id: "PHASE-008"
+  slug: "content-generation-automation"
+  title: "Module 3 Stage 2 & 3 - Content Generation Automation & Intelligence"
+
+  summary: |
+    Nâng cấp content generation với LLM Gateway (multi-model), auto scheduling,
+    RAG, cost optimization router, và AI image generation.
+
+  goal: |
+    Advanced content generation với multiple LLMs, intelligent routing,
+    auto scheduling, và RAG-enhanced content.
+
+  from_master_spec:
+    sections:
+      - "Page 6-7: Module 3 - Giai đoạn 2 & 3"
+      - "Giai đoạn 2: LLM Gateway Service - gọi nhiều API (Gemini, GPT, Grok)"
+      - "Giai đoạn 2: Cost-Optimization Router"
+      - "Giai đoạn 2: Lên lịch tự động - Cron job"
+      - "Giai đoạn 3: RAG (Retrieval-Augmented Generation)"
+      - "Giai đoạn 3: Lịch thông minh dựa trên traffic data"
+      - "Giai đoạn 3: AI Image Generation (DALL-E 3, Stable Diffusion)"
+
+  scope:
+    included:
+      - "LLM Gateway với multi-provider support (OpenAI, Anthropic, Google, Grok)"
+      - "Cost optimization router (IF-THEN rules)"
+      - "Auto scheduling với Celery"
+      - "RAG implementation với vector search"
+      - "Smart scheduling based on analytics data"
+      - "Free image APIs (Pexels, Unsplash)"
+      - "AI image generation (DALL-E 3, Stable Diffusion)"
+    excluded:
+      - "Advanced RL-based routing"
+
+  dependencies:
+    - "PHASE-007"
+    - "PHASE-006"
+
+  inputs:
+    - name: "Content Generator from PHASE-007"
+      type: "codebase"
+      location: "services/content-generator/"
+
+  outputs:
+    - name: "LLM Gateway"
+      type: "code"
+      location_hint: "services/llm-gateway/"
+    - name: "Content Scheduler"
+      type: "code"
+      location_hint: "services/content-generator/scheduler/"
+    - name: "RAG Engine"
+      type: "code"
+      location_hint: "services/content-generator/rag/"
+
+  implementation_prompt: |
+    Triển khai **PHASE-008 – Content Generation Automation & Intelligence**.
+
+    YÊU CẦU:
+
+    1. **LLM Gateway**:
+    ```python
+    class LLMGateway:
+        def __init__(self):
+            self.providers = {
+                'openai': OpenAIProvider(),
+                'anthropic': AnthropicProvider(),
+                'google': GoogleProvider(),
+                'xai': XAIProvider()  # Grok
+            }
+        
+        async def generate(self, prompt, provider='openai', model=None):
+            return await self.providers[provider].generate(prompt, model)
+    ```
+
+    2. **Cost Optimization Router**:
+    ```python
+    class CostRouter:
+        def select_model(self, priority: str, word_count: int):
+            if priority == 'high':
+                return ('openai', 'gpt-4o')
+            elif priority == 'medium':
+                return ('anthropic', 'claude-3-sonnet')
+            else:
+                return ('google', 'gemini-pro')
+    ```
+
+    3. **RAG Implementation**:
+    ```python
+    from langchain.vectorstores import PGVector
+    from langchain.embeddings import OpenAIEmbeddings
+    
+    class RAGEngine:
+        async def enrich_context(self, query: str):
+            # Query SERP data from Module 2
+            serp_data = await self.get_serp_data(query)
+            
+            # Embed and store in pgvector
+            embeddings = OpenAIEmbeddings()
+            docs = [...]
+            vectorstore = PGVector.from_documents(docs, embeddings)
+            
+            # Retrieve relevant context
+            context = vectorstore.similarity_search(query, k=5)
+            return context
+    ```
+
+    4. **Auto Scheduler**:
+    ```python
+    @celery_app.task
+    async def generate_scheduled_articles():
+        plans = await get_pending_content_plans()
+        for plan in plans:
+            await generate_article.delay(plan.id)
+    
+    @celery_app.task
+    async def smart_schedule_optimizer(workspace_id):
+        # Analyze traffic patterns from Module 6
+        optimal_times = await analyze_traffic_patterns(workspace_id)
+        # Schedule article generation at optimal times
+    ```
+
+    5. **Image Integration**:
+    ```python
+    class ImageService:
+        async def get_free_images(self, query: str):
+            # Pexels, Unsplash API
+            pass
+        
+        async def generate_ai_image(self, prompt: str):
+            # DALL-E 3
+            response = await openai.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024"
+            )
+            return response.data[0].url
+    ```
+
+    KẾT QUẢ:
+    - Multi-LLM support hoạt động
+    - Cost router chọn model phù hợp
+    - RAG enhance content quality
+    - Auto scheduling hoạt động
+    - AI image generation hoạt động
+
+  acceptance_criteria:
+    - "LLM Gateway support ít nhất 3 providers"
+    - "Cost router route đúng model theo priority"
+    - "RAG improve content relevance"
+    - "Scheduled jobs tạo articles tự động"
+    - "AI images generated successfully"
+    - "Tests pass"
+
+  non_goals:
+    - "Advanced RL routing"
+
+  notes:
+    - "pgvector extension cần enable trong PostgreSQL"
+    - "Rate limiting cần implement cho image APIs"
