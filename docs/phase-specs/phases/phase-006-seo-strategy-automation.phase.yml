@@ -1,0 +1,163 @@
+phase:
+  id: "PHASE-006"
+  slug: "seo-strategy-automation"
+  title: "Module 2 Stage 2 & 3 - SEO Strategy Automation & Self-Learning"
+
+  summary: |
+    Nâng cấp Module 2 với automation: TF-IDF/K-Means clustering, semantic clustering
+    với embeddings, tự động phân tích SERP, và predictive ranking model.
+
+  goal: |
+    Thêm AI-powered features vào SEO strategy:
+    - Auto clustering với TF-IDF và K-Means
+    - Semantic clustering với SBERT embeddings
+    - SERP scraping và analysis engine
+    - Predictive ranking model
+    - Auto priority assignment
+
+  from_master_spec:
+    sections:
+      - "Page 5-6: Module 2 - Giai đoạn 2 & 3"
+      - "Giai đoạn 2: TF-IDF/K-Means clustering"
+      - "Giai đoạn 2: API calls (Ahrefs/SEMrush) lấy Top 10"
+      - "Giai đoạn 3: Semantic clustering với SBERT"
+      - "Giai đoạn 3: SERP Analysis Engine"
+      - "Giai đoạn 3: Predictive Model dự đoán ranking"
+
+  scope:
+    included:
+      - "TF-IDF vectorization và K-Means clustering"
+      - "SBERT embeddings cho semantic similarity"
+      - "SERP scraper (Google Top 10 results)"
+      - "Competitor content analysis (word count, headers, entities)"
+      - "Rule-based priority assignment"
+      - "ML-based ranking prediction model"
+      - "Auto content plan generation"
+    excluded:
+      - "Advanced NLP features"
+      - "Real-time SERP tracking"
+
+  dependencies:
+    - "PHASE-005"
+    - "PHASE-004"
+
+  inputs:
+    - name: "SEO Strategy Service from PHASE-005"
+      type: "codebase"
+      location: "services/seo-strategy/"
+
+  outputs:
+    - name: "Clustering Engine"
+      type: "code"
+      location_hint: "services/seo-strategy/ml/clustering.py"
+    - name: "SERP Analyzer"
+      type: "code"
+      location_hint: "services/serp-analyzer/"
+    - name: "Ranking Predictor"
+      type: "code"
+      location_hint: "services/seo-strategy/ml/predictor.py"
+
+  implementation_prompt: |
+    Triển khai **PHASE-006 – SEO Strategy Automation & Self-Learning**.
+
+    YÊU CẦU:
+
+    1. **Auto Clustering**:
+    ```python
+    # ml/clustering.py
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.cluster import KMeans
+    from sentence_transformers import SentenceTransformer
+    
+    class KeywordClusterer:
+        def cluster_tfidf(self, keywords: List[str], n_clusters=5):
+            vectorizer = TfidfVectorizer()
+            X = vectorizer.fit_transform(keywords)
+            kmeans = KMeans(n_clusters=n_clusters)
+            labels = kmeans.fit_predict(X)
+            return labels
+        
+        def cluster_semantic(self, keywords: List[str], threshold=0.7):
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            embeddings = model.encode(keywords)
+            # Use hierarchical clustering or DBSCAN
+            from sklearn.cluster import DBSCAN
+            clustering = DBSCAN(eps=threshold, min_samples=2, metric='cosine')
+            labels = clustering.fit_predict(embeddings)
+            return labels
+    ```
+
+    2. **SERP Scraper**:
+    ```python
+    # services/serp-analyzer/scraper.py
+    import httpx
+    from bs4 import BeautifulSoup
+    
+    class SERPScraper:
+        async def get_top_results(self, keyword: str, num_results=10):
+            # Use Google Custom Search API hoặc ScraperAPI
+            results = await self._scrape_google(keyword)
+            return results[:num_results]
+        
+        async def analyze_content(self, url: str):
+            html = await self._fetch(url)
+            soup = BeautifulSoup(html, 'html.parser')
+            
+            return {
+                'word_count': self._count_words(soup),
+                'h1': soup.find('h1').text if soup.find('h1') else None,
+                'h2_count': len(soup.find_all('h2')),
+                'h3_count': len(soup.find_all('h3')),
+                'images_count': len(soup.find_all('img')),
+                'internal_links': len([a for a in soup.find_all('a') if self._is_internal(a)]),
+                'external_links': len([a for a in soup.find_all('a') if not self._is_internal(a)])
+            }
+    ```
+
+    3. **Predictive Ranking Model**:
+    ```python
+    # ml/predictor.py
+    import xgboost as xgb
+    
+    class RankingPredictor:
+        def __init__(self):
+            self.model = xgb.XGBClassifier()
+        
+        def train(self, features, labels):
+            # Features: keyword_difficulty, search_volume, content_quality_score, etc.
+            self.model.fit(features, labels)
+        
+        def predict_ranking_probability(self, features):
+            # Predict probability of ranking in top 10
+            return self.model.predict_proba(features)[:, 1]
+    ```
+
+    4. **Auto Content Plan Generation**:
+    - Trigger khi có cluster mới
+    - Analyze top competitors
+    - Suggest title, word count, outline
+    - Assign priority based on difficulty vs volume
+
+    KẾT QUẢ:
+    - Auto clustering hoạt động
+    - SERP data được scrape và analyze
+    - Predictive model predict ranking probability
+    - Content plans tự động generated với suggestions
+
+  acceptance_criteria:
+    - "TF-IDF clustering nhóm keywords thành clusters hợp lý"
+    - "Semantic clustering nhóm keywords theo ý nghĩa"
+    - "SERP scraper lấy được Top 10 results"
+    - "Content analyzer extract được metrics từ competitor pages"
+    - "Ranking predictor có accuracy >= 70% trên validation set"
+    - "Auto content plan generation tạo plans hợp lý"
+    - "Tests pass"
+
+  non_goals:
+    - "Real-time SERP tracking"
+    - "Advanced entity extraction"
+
+  notes:
+    - "SERP scraping cần proxy rotation để tránh bị block"
+    - "Google Custom Search API có quota limit"
+    - "ScraperAPI là alternative tốt"

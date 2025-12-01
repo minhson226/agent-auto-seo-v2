@@ -1,0 +1,432 @@
+phase:
+  id: "PHASE-003"
+  slug: "keyword-ingestion-mvp"
+  title: "Module 1 MVP - Keyword & Data Ingestion Engine"
+
+  summary: |
+    Xây dựng MVP cho Module 1 - Keyword & Data Ingestion Engine.
+    Cho phép users upload danh sách từ khóa thủ công qua file CSV/TXT,
+    hệ thống sẽ đọc, chuẩn hóa (lowercase, xóa trùng) và lưu vào database.
+    Phase này tạo ra foundation cho các module tiếp theo sử dụng keyword data.
+
+  goal: |
+    Hoàn thành keyword ingestion service với khả năng:
+    - Upload CSV/TXT files chứa keyword lists
+    - Parse và validate dữ liệu
+    - Chuẩn hóa keywords (lowercase, trim, xóa trùng lặp)
+    - Lưu vào database với status tracking
+    - Emit events khi keyword list được import thành công
+    - API để query và manage keyword lists
+
+  from_master_spec:
+    sections:
+      - "Page 5: Module 1 - Keyword & Data Ingestion Engine"
+      - "Giai đoạn 1 (MVP): Upload thủ công file CSV/TXT"
+      - "Xử lý dữ liệu: Đọc file, chuẩn hóa (lowercase, xóa trùng)"
+      - "Mô hình Dữ liệu: Keywords(id, list_id, text, status: 'pending', intent: 'unknown')"
+      - "Output Event: keyword.list.imported"
+
+  scope:
+    included:
+      - "Keyword Ingestion Service (Python với FastAPI)"
+      - "File upload endpoint (CSV/TXT)"
+      - "CSV/TXT parser với validation"
+      - "Keyword normalization logic (lowercase, trim, dedup)"
+      - "Database schema: keyword_lists, keywords tables"
+      - "CRUD APIs cho keyword lists và keywords"
+      - "Event publishing: keyword.list.imported"
+      - "File storage integration (MinIO/S3 cho raw files)"
+      - "Basic statistics endpoint (count, status breakdown)"
+      - "Unit tests và integration tests"
+    excluded:
+      - "API connectors (Ahrefs, SEMrush) - sẽ làm ở PHASE-004"
+      - "Google Trends integration - PHASE-004"
+      - "NLP-based intent classification - PHASE-004"
+      - "Automatic search intent detection - PHASE-004"
+      - "Paste danh sách vào UI - có thể thêm nếu đơn giản"
+
+  dependencies:
+    - "PHASE-001"
+    - "PHASE-002"
+
+  inputs:
+    - name: "Core Services from PHASE-002"
+      type: "codebase"
+      location: "services/"
+      description: "API Gateway, Auth Service, Event Bus"
+    - name: "Infrastructure"
+      type: "infrastructure"
+      location: "PostgreSQL, MinIO, RabbitMQ"
+
+  outputs:
+    - name: "Keyword Ingestion Service"
+      type: "code"
+      description: "Python FastAPI service xử lý keyword imports"
+      location_hint: "services/keyword-ingestion/"
+    - name: "Database Schemas"
+      type: "code"
+      description: "Migrations cho keyword_lists và keywords tables"
+      location_hint: "migrations/003_keyword_ingestion/"
+    - name: "API Endpoints"
+      type: "code"
+      description: "REST APIs cho keyword management"
+      location_hint: "services/keyword-ingestion/api/"
+    - name: "Tests"
+      type: "tests"
+      description: "Unit và integration tests"
+      location_hint: "services/keyword-ingestion/tests/"
+
+  implementation_prompt: |
+    Bạn là senior Python backend engineer đang làm việc trong repository Auto-SEO.
+
+    Nhiệm vụ của bạn là triển khai **PHASE-003 – Module 1 MVP - Keyword Ingestion**
+    theo đặc tả trong file YAML này.
+
+    BỐI CẢNH:
+    - Module 1 là điểm bắt đầu của toàn bộ content pipeline
+    - Giai đoạn MVP tập trung vào manual upload và basic processing
+    - Automation sẽ đến ở PHASE-004
+    - Phase này có slug: keyword-ingestion-mvp
+    - Scope bao gồm:
+      - File upload (CSV/TXT)
+      - Parsing và validation
+      - Normalization
+      - Database storage
+      - Event publishing
+      - APIs
+    - Scope loại trừ:
+      - API connectors (Ahrefs, SEMrush)
+      - Google Trends
+      - Intent classification
+    - Dependencies: PHASE-001 (infra), PHASE-002 (core services)
+
+    YÊU CẦU KHI TRIỂN KHAI:
+
+    1. **Service Architecture**:
+       Technology Stack:
+       - Python 3.11+
+       - FastAPI framework
+       - SQLAlchemy ORM
+       - Pandas cho CSV processing
+       - aio-pika cho RabbitMQ
+       - boto3/minio-py cho S3/MinIO
+       
+       Structure:
+       ```
+       services/keyword-ingestion/
+       ├── app/
+       │   ├── __init__.py
+       │   ├── main.py
+       │   ├── api/
+       │   │   ├── __init__.py
+       │   │   ├── v1/
+       │   │   │   ├── __init__.py
+       │   │   │   ├── keyword_lists.py
+       │   │   │   └── keywords.py
+       │   ├── models/
+       │   │   ├── __init__.py
+       │   │   ├── keyword_list.py
+       │   │   └── keyword.py
+       │   ├── services/
+       │   │   ├── __init__.py
+       │   │   ├── file_parser.py
+       │   │   ├── keyword_processor.py
+       │   │   └── event_publisher.py
+       │   ├── schemas/
+       │   │   ├── __init__.py
+       │   │   └── keyword.py
+       │   └── config.py
+       ├── tests/
+       ├── Dockerfile
+       └── requirements.txt
+       ```
+
+    2. **Database Schema**:
+       ```sql
+       CREATE TABLE keyword_lists (
+         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+         workspace_id UUID NOT NULL REFERENCES workspaces(id),
+         name VARCHAR(255) NOT NULL,
+         description TEXT,
+         source VARCHAR(50), -- 'csv_upload', 'txt_upload', 'api', 'manual'
+         source_file_url VARCHAR(500), -- S3/MinIO URL
+         total_keywords INTEGER DEFAULT 0,
+         status VARCHAR(50) DEFAULT 'processing', -- 'processing', 'completed', 'failed'
+         error_message TEXT,
+         created_by UUID REFERENCES users(id),
+         created_at TIMESTAMP DEFAULT NOW(),
+         updated_at TIMESTAMP DEFAULT NOW(),
+         processed_at TIMESTAMP
+       );
+       
+       CREATE TABLE keywords (
+         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+         list_id UUID NOT NULL REFERENCES keyword_lists(id) ON DELETE CASCADE,
+         text VARCHAR(500) NOT NULL,
+         normalized_text VARCHAR(500) NOT NULL, -- lowercase, trimmed
+         status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'processed', 'assigned'
+         intent VARCHAR(50) DEFAULT 'unknown', -- 'unknown', 'informational', 'commercial', 'navigational', 'transactional'
+         search_volume INTEGER,
+         keyword_difficulty DECIMAL(5,2),
+         metadata JSONB, -- để mở rộng sau
+         created_at TIMESTAMP DEFAULT NOW(),
+         updated_at TIMESTAMP DEFAULT NOW(),
+         UNIQUE(list_id, normalized_text)
+       );
+       
+       CREATE INDEX idx_keywords_list_id ON keywords(list_id);
+       CREATE INDEX idx_keywords_status ON keywords(status);
+       CREATE INDEX idx_keywords_normalized_text ON keywords(normalized_text);
+       CREATE INDEX idx_keyword_lists_workspace_id ON keyword_lists(workspace_id);
+       ```
+
+    3. **API Endpoints**:
+       
+       **Keyword Lists:**
+       - POST /api/v1/keyword-lists
+         - Body: multipart/form-data with file
+         - Headers: Authorization (JWT)
+         - Request:
+           ```json
+           {
+             "name": "Main Keywords Q4 2025",
+             "description": "Keywords from Google Keyword Planner",
+             "workspace_id": "uuid",
+             "file": "<file>"
+           }
+           ```
+         - Response: 201 Created
+           ```json
+           {
+             "id": "uuid",
+             "name": "Main Keywords Q4 2025",
+             "status": "processing",
+             "total_keywords": 0,
+             "created_at": "2025-11-23T14:00:00Z"
+           }
+           ```
+       
+       - GET /api/v1/keyword-lists?workspace_id=uuid
+         - Query: workspace_id (required), status (optional)
+         - Response: 200 OK
+           ```json
+           {
+             "data": [
+               {
+                 "id": "uuid",
+                 "name": "...",
+                 "total_keywords": 150,
+                 "status": "completed",
+                 "created_at": "..."
+               }
+             ],
+             "total": 1,
+             "page": 1,
+             "page_size": 20
+           }
+           ```
+       
+       - GET /api/v1/keyword-lists/{id}
+         - Response: 200 OK with full details
+       
+       - DELETE /api/v1/keyword-lists/{id}
+         - Response: 204 No Content
+       
+       **Keywords:**
+       - GET /api/v1/keyword-lists/{list_id}/keywords
+         - Query: status, intent, page, page_size
+         - Response: paginated keywords
+       
+       - GET /api/v1/keyword-lists/{list_id}/stats
+         - Response: statistics
+           ```json
+           {
+             "total": 150,
+             "by_status": {
+               "pending": 100,
+               "processed": 50
+             },
+             "by_intent": {
+               "unknown": 150
+             }
+           }
+           ```
+
+    4. **File Processing Logic**:
+       
+       ```python
+       # services/file_parser.py
+       class FileParser:
+           async def parse_csv(self, file_path: str) -> List[str]:
+               """Parse CSV file and extract keywords.
+               
+               Expected format:
+               - Single column: keyword
+               - Or multiple columns, take first column
+               - Skip header if detected
+               """
+               df = pd.read_csv(file_path)
+               # Detect if first row is header
+               # Extract first column
+               # Return list of keywords
+               
+           async def parse_txt(self, file_path: str) -> List[str]:
+               """Parse TXT file, one keyword per line."""
+               with open(file_path, 'r') as f:
+                   keywords = [line.strip() for line in f if line.strip()]
+               return keywords
+       
+       # services/keyword_processor.py
+       class KeywordProcessor:
+           def normalize(self, keyword: str) -> str:
+               """Normalize keyword: lowercase, trim, remove extra spaces."""
+               return ' '.join(keyword.lower().strip().split())
+           
+           def deduplicate(self, keywords: List[str]) -> List[str]:
+               """Remove duplicates after normalization."""
+               seen = set()
+               unique = []
+               for kw in keywords:
+                   normalized = self.normalize(kw)
+                   if normalized not in seen:
+                       seen.add(normalized)
+                       unique.append(kw)
+               return unique
+       ```
+
+    5. **Processing Flow**:
+       1. User uploads file qua API
+       2. File được lưu vào MinIO/S3
+       3. Tạo keyword_list record với status='processing'
+       4. Background task (Celery hoặc async task):
+          a. Download file từ S3
+          b. Parse file (CSV hoặc TXT)
+          c. Normalize keywords
+          d. Deduplicate
+          e. Batch insert vào keywords table
+          f. Update keyword_list: total_keywords, status='completed'
+          g. Publish event: keyword.list.imported
+       5. Return success response
+
+    6. **Event Publishing**:
+       Event: `keyword.list.imported`
+       
+       ```json
+       {
+         "event_type": "keyword.list.imported",
+         "timestamp": "2025-11-23T14:00:00Z",
+         "workspace_id": "uuid",
+         "payload": {
+           "list_id": "uuid",
+           "list_name": "Main Keywords Q4 2025",
+           "total_keywords": 150,
+           "source": "csv_upload"
+         },
+         "metadata": {
+           "source_service": "keyword-ingestion",
+           "correlation_id": "uuid"
+         }
+       }
+       ```
+
+    7. **Error Handling**:
+       - Invalid file format: 400 Bad Request
+       - File too large (> 10MB): 413 Payload Too Large
+       - Parsing errors: Update keyword_list status='failed', error_message
+       - Duplicate list name: 409 Conflict
+       - Database errors: Retry mechanism
+
+    8. **Background Task Processing**:
+       Option 1: Celery + Redis
+       Option 2: FastAPI BackgroundTasks (simple)
+       Option 3: Separate worker service
+       
+       Recommendation: FastAPI BackgroundTasks cho MVP, migrate to Celery nếu cần scale
+
+    9. **Testing**:
+       - Unit tests:
+         - FileParser: parse_csv, parse_txt
+         - KeywordProcessor: normalize, deduplicate
+       - Integration tests:
+         - Upload CSV file -> verify keywords in database
+         - Upload TXT file -> verify keywords in database
+         - Test event publishing
+       - Test cases:
+         - Valid CSV with header
+         - Valid CSV without header
+         - Valid TXT file
+         - Empty file
+         - Invalid format
+         - Duplicate keywords
+         - Large file (performance test)
+
+    10. **Deployment**:
+        - Dockerfile multi-stage build
+        - K8s Deployment với:
+          - Resource limits (CPU, memory)
+          - Health checks
+          - Volume mount cho temporary files
+        - Environment variables:
+          - DATABASE_URL
+          - S3_ENDPOINT, S3_BUCKET
+          - RABBITMQ_URL
+          - JWT_SECRET
+
+    TECH STACK DETAILS:
+    - Python 3.11+
+    - FastAPI + Uvicorn
+    - SQLAlchemy 2.0
+    - Pandas cho CSV processing
+    - aio-pika cho RabbitMQ
+    - boto3 hoặc minio-py
+    - pytest cho testing
+
+    BEST PRACTICES:
+    - Use async/await cho I/O operations
+    - Validate file size before processing
+    - Stream large files thay vì load toàn bộ vào memory
+    - Use database transactions
+    - Proper error logging
+    - Rate limiting cho upload endpoint
+
+    GIỚI HẠN:
+    - Không implement API connectors
+    - Không implement intent classification (để PHASE-004)
+    - Không implement advanced features
+
+    KẾT QUẢ CUỐI:
+    - Users có thể upload CSV/TXT files
+    - Keywords được parse, normalize và lưu vào database
+    - Event được publish khi import thành công
+    - APIs hoạt động đúng với proper authentication
+    - Tests pass với coverage >= 80%
+
+  acceptance_criteria:
+    - "User có thể upload CSV file và keywords được import thành công"
+    - "User có thể upload TXT file và keywords được import thành công"
+    - "Keywords được normalize đúng (lowercase, trim, dedup)"
+    - "Duplicate keywords trong cùng một list được loại bỏ"
+    - "keyword_list record được tạo với status tracking"
+    - "Event keyword.list.imported được publish sau khi import xong"
+    - "API GET /keyword-lists trả về danh sách đúng với workspace isolation"
+    - "API GET /keyword-lists/{id}/keywords trả về keywords với pagination"
+    - "API GET /keyword-lists/{id}/stats trả về statistics chính xác"
+    - "File uploads được lưu vào MinIO/S3"
+    - "Error handling hoạt động đúng cho invalid files"
+    - "Tests pass với coverage >= 80%"
+
+  non_goals:
+    - "Tích hợp với Ahrefs/SEMrush APIs"
+    - "Google Trends integration"
+    - "Automatic intent classification"
+    - "Keyword research suggestions"
+    - "Competitor keyword analysis"
+    - "Advanced CSV parsing (multiple columns, complex formats)"
+
+  notes:
+    - "CSV format expected: simple single-column hoặc first column là keyword"
+    - "TXT format: one keyword per line"
+    - "File size limit: 10MB cho MVP"
+    - "Background processing có thể dùng FastAPI BackgroundTasks cho đơn giản"
+    - "Nếu cần scale, migrate to Celery + Redis queue"
+    - "Intent classification sẽ được thêm ở PHASE-004 với NLP model"

@@ -1,0 +1,235 @@
+phase:
+  id: "PHASE-012"
+  slug: "publishing-automation"
+  title: "Module 5 Stage 2 & 3 - Publishing Automation & Intelligent Linking"
+
+  summary: |
+    Auto publishing lên WordPress, multi-platform support, và intelligent
+    internal linking với semantic similarity.
+
+  goal: |
+    Full auto publishing và semantic-based internal linking.
+
+  from_master_spec:
+    sections:
+      - "Page 8-9: Module 5 - Giai đoạn 2 & 3"
+      - "Giai đoạn 2: WP Publisher Service - auto đăng qua WP API"
+      - "Giai đoạn 2: Internal Linking - string matching"
+      - "Giai đoạn 3: Multi-platform (Ghost, Medium, Webflow)"
+      - "Giai đoạn 3: Internal Link Injector với embeddings và AI rewriting"
+
+  scope:
+    included:
+      - "WordPress Publisher Service (WP REST API)"
+      - "Ghost/Medium/Webflow publishers"
+      - "Google Indexing API integration"
+      - "Basic internal linking (string matching)"
+      - "Semantic internal linking (SBERT embeddings)"
+      - "AI-powered anchor text rewriting"
+    excluded:
+      - "Advanced link graph analysis"
+
+  dependencies:
+    - "PHASE-011"
+    - "PHASE-008"
+
+  inputs:
+    - name: "Publisher from PHASE-011"
+      type: "codebase"
+      location: "services/publisher/"
+
+  outputs:
+    - name: "WordPress Publisher"
+      type: "code"
+      location_hint: "services/publisher/wp_publisher.py"
+    - name: "Internal Linker"
+      type: "code"
+      location_hint: "services/internal-linker/"
+
+  implementation_prompt: |
+    Triển khai **PHASE-012 – Publishing Automation & Intelligent Linking**.
+
+    YÊU CẦU:
+
+    1. **WordPress Publisher**:
+    ```python
+    import httpx
+    
+    class WordPressPublisher:
+        async def publish(self, article: Article, site: Site):
+            auth = (site.wp_username, site.wp_app_password)
+            
+            payload = {
+                'title': article.title,
+                'content': article.content,
+                'status': 'publish',
+                'categories': [...]
+            }
+            
+            response = await httpx.post(
+                f"{site.wp_api_endpoint}/wp-json/wp/v2/posts",
+                json=payload,
+                auth=auth
+            )
+            
+            wp_post_id = response.json()['id']
+            url = response.json()['link']
+            
+            # Save to database
+            await create_published_post(article.id, site.id, wp_post_id, url)
+            
+            # Ping Google Indexing API
+            await self.ping_google_indexing(url)
+            
+            # Publish event
+            await publish_event('article.published', {
+                'article_id': article.id,
+                'url': url
+            })
+    ```
+
+    2. **Google Indexing API**:
+    ```python
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    
+    class GoogleIndexer:
+        async def request_indexing(self, url: str):
+            credentials = service_account.Credentials.from_service_account_file(
+                'service_account.json'
+            )
+            service = build('indexing', 'v3', credentials=credentials)
+            
+            body = {
+                'url': url,
+                'type': 'URL_UPDATED'
+            }
+            
+            response = service.urlNotifications().publish(body=body).execute()
+            return response
+    ```
+
+    3. **Internal Linker - String Matching**:
+    ```python
+    class BasicInternalLinker:
+        async def find_link_opportunities(self, new_article: Article):
+            # Find old articles containing exact keyword match
+            old_articles = await get_published_articles(new_article.workspace_id)
+            
+            opportunities = []
+            for old in old_articles:
+                for keyword in new_article.target_keywords:
+                    if keyword.lower() in old.content.lower():
+                        opportunities.append({
+                            'from_article_id': old.id,
+                            'to_article_id': new_article.id,
+                            'keyword': keyword
+                        })
+            
+            return opportunities
+    ```
+
+    4. **Semantic Internal Linker**:
+    ```python
+    from sentence_transformers import SentenceTransformer
+    
+    class SemanticInternalLinker:
+        def __init__(self):
+            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        async def find_related_articles(self, new_article: Article, threshold=0.7):
+            # Embed new article
+            new_embedding = self.model.encode(new_article.content)
+            
+            # Get all published articles
+            old_articles = await get_published_articles_with_embeddings(
+                new_article.workspace_id
+            )
+            
+            # Calculate similarity
+            related = []
+            for old in old_articles:
+                similarity = cosine_similarity(new_embedding, old.embedding)
+                if similarity > threshold:
+                    related.append({
+                        'article': old,
+                        'similarity': similarity
+                    })
+            
+            return sorted(related, key=lambda x: x['similarity'], reverse=True)[:5]
+    ```
+
+    5. **AI Anchor Text Rewriter**:
+    ```python
+    class AnchorTextRewriter:
+        async def rewrite_sentence_with_link(self, sentence: str, 
+                                            keyword: str, 
+                                            target_url: str):
+            prompt = f"""
+            Rewrite this sentence to naturally include a link with anchor text "{keyword}":
+            
+            Original: {sentence}
+            
+            Requirements:
+            - Keep the meaning
+            - Make it natural
+            - Use "{keyword}" as anchor text
+            """
+            
+            response = await llm_gateway.generate(prompt, provider='openai', 
+                                                 model='gpt-4o-mini')
+            
+            return response
+    ```
+
+    6. **Database Schema**:
+    ```sql
+    CREATE TABLE internal_link_map (
+      id UUID PRIMARY KEY,
+      from_post_id UUID REFERENCES published_posts(id),
+      to_post_id UUID REFERENCES published_posts(id),
+      anchor_text VARCHAR(255),
+      similarity_score DECIMAL(5,2),
+      created_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(from_post_id, to_post_id)
+    );
+    
+    ALTER TABLE articles
+    ADD COLUMN embedding vector(384); -- for pgvector
+    ```
+
+    7. **Scheduled Internal Linking Job**:
+    ```python
+    @celery_app.task
+    async def update_internal_links_nightly():
+        # For each workspace
+        workspaces = await get_active_workspaces()
+        
+        for ws in workspaces:
+            # Find link opportunities
+            await semantic_linker.process_workspace(ws.id)
+    ```
+
+    KẾT QUẢ:
+    - Auto publishing lên WordPress
+    - Google Indexing API được ping
+    - Internal links được tạo tự động
+    - Semantic linking hoạt động
+
+  acceptance_criteria:
+    - "WordPress publishing hoạt động tự động"
+    - "Google Indexing API được ping thành công"
+    - "String matching internal linking hoạt động"
+    - "Semantic linking tìm được related articles accurately"
+    - "AI anchor text rewriting tạo sentences tự nhiên"
+    - "Nightly jobs update internal links"
+    - "Tests pass"
+
+  non_goals:
+    - "Link graph visualization"
+    - "Advanced link building strategies"
+
+  notes:
+    - "WP Application Passwords cần setup trong WordPress"
+    - "pgvector extension cần enable"
+    - "Embeddings nên pre-compute và cache"

@@ -1,0 +1,183 @@
+phase:
+  id: "PHASE-013"
+  slug: "feedback-analytics-mvp"
+  title: "Module 6 MVP - Feedback & Analytics Foundation"
+
+  summary: |
+    MVP cho Module 6 với manual data input. Users tự xem GA/GSC và nhập
+    ranking data vào Dashboard. Basic reporting.
+
+  goal: |
+    Manual analytics tracking và basic reporting infrastructure.
+
+  from_master_spec:
+    sections:
+      - "Page 9-10: Module 6 - Feedback & Strategic Learning Engine"
+      - "Giai đoạn 1 (MVP): Thủ công. User tự xem GA/GSC và nhập rank vào Dashboard"
+      - "Báo cáo: Báo cáo cơ bản dựa trên data user nhập"
+
+  scope:
+    included:
+      - "Manual data entry API (impressions, clicks, position)"
+      - "Basic reporting dashboard APIs"
+      - "ClickHouse setup cho analytics data"
+      - "Database schema: fact_performance table"
+      - "Simple visualization data endpoints"
+    excluded:
+      - "GA/GSC API integration - PHASE-014"
+      - "Auto alerting - PHASE-014"
+      - "Strategic learning - PHASE-014"
+
+  dependencies:
+    - "PHASE-001"
+    - "PHASE-012"
+
+  inputs:
+    - name: "Published posts data"
+      type: "data"
+      location: "published_posts table"
+
+  outputs:
+    - name: "Analytics Service"
+      type: "code"
+      location_hint: "services/analytics/"
+    - name: "ClickHouse Schema"
+      type: "code"
+      location_hint: "infrastructure/clickhouse/schema.sql"
+
+  implementation_prompt: |
+    Triển khai **PHASE-013 – Feedback & Analytics MVP**.
+
+    YÊU CẦU:
+
+    1. **ClickHouse Schema**:
+    ```sql
+    CREATE TABLE fact_performance (
+      date Date,
+      url_hash String,
+      url String,
+      workspace_id String,
+      article_id String,
+      impressions UInt32,
+      clicks UInt32,
+      position Float32,
+      ai_model_used String,
+      prompt_id String,
+      cost_usd Float32,
+      created_at DateTime DEFAULT now()
+    ) ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(date)
+    ORDER BY (workspace_id, url_hash, date);
+    ```
+
+    2. **Manual Data Entry API**:
+    ```python
+    @router.post("/api/v1/analytics/performance")
+    async def record_performance(data: PerformanceData):
+        """
+        Body: {
+          "url": "https://example.com/article",
+          "date": "2025-11-23",
+          "impressions": 1000,
+          "clicks": 50,
+          "position": 5.2
+        }
+        """
+        # Insert into ClickHouse
+        await clickhouse_client.insert(
+            'fact_performance',
+            [{
+                'date': data.date,
+                'url': data.url,
+                'url_hash': hashlib.md5(data.url.encode()).hexdigest(),
+                'impressions': data.impressions,
+                'clicks': data.clicks,
+                'position': data.position,
+                ...
+            }]
+        )
+    ```
+
+    3. **Reporting APIs**:
+    ```python
+    @router.get("/api/v1/analytics/summary")
+    async def get_summary(workspace_id: str, date_from: str, date_to: str):
+        """
+        Returns: {
+          "total_impressions": 10000,
+          "total_clicks": 500,
+          "avg_position": 8.5,
+          "articles_ranking": 25,
+          "top_articles": [...]
+        }
+        """
+        query = """
+        SELECT
+          sum(impressions) as total_impressions,
+          sum(clicks) as total_clicks,
+          avg(position) as avg_position,
+          count(DISTINCT article_id) as articles_ranking
+        FROM fact_performance
+        WHERE workspace_id = %(workspace_id)s
+          AND date BETWEEN %(date_from)s AND %(date_to)s
+        """
+        
+        result = await clickhouse_client.execute(query, {
+            'workspace_id': workspace_id,
+            'date_from': date_from,
+            'date_to': date_to
+        })
+        
+        return result
+    
+    @router.get("/api/v1/analytics/articles/{article_id}/performance")
+    async def get_article_performance(article_id: str, days: int = 30):
+        """Time series data for specific article."""
+        query = """
+        SELECT
+          date,
+          impressions,
+          clicks,
+          position
+        FROM fact_performance
+        WHERE article_id = %(article_id)s
+          AND date >= today() - %(days)s
+        ORDER BY date
+        """
+        
+        return await clickhouse_client.execute(query, {
+            'article_id': article_id,
+            'days': days
+        })
+    ```
+
+    4. **PostgreSQL Link Table**:
+    ```sql
+    CREATE TABLE article_performance_sync (
+      article_id UUID PRIMARY KEY REFERENCES articles(id),
+      last_synced_at TIMESTAMP,
+      avg_position_30d DECIMAL(5,2),
+      total_clicks_30d INTEGER,
+      total_impressions_30d INTEGER
+    );
+    ```
+
+    KẾT QUẢ:
+    - Manual data entry works
+    - Basic reports available
+    - ClickHouse storing analytics data
+
+  acceptance_criteria:
+    - "ClickHouse schema created successfully"
+    - "Manual data entry API works"
+    - "Summary API returns correct aggregations"
+    - "Article performance API returns time series data"
+    - "Tests pass"
+
+  non_goals:
+    - "GA/GSC integration"
+    - "Auto alerting"
+
+  notes:
+    - "ClickHouse excellent for time series analytics"
+    - "Can switch to BigQuery if prefer managed service"

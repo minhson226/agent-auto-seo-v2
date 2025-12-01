@@ -1,0 +1,317 @@
+phase:
+  id: "PHASE-015"
+  slug: "dashboard-ui"
+  title: "Dashboard & User Interface Development"
+
+  summary: |
+    Xây dựng frontend Dashboard với React để users có thể tương tác với
+    toàn bộ hệ thống: quản lý workspaces, sites, keywords, clusters,
+    content plans, articles, và xem analytics.
+
+  goal: |
+    Full-featured web dashboard cho Auto-SEO platform với tất cả
+    các tính năng quản lý và visualization.
+
+  from_master_spec:
+    sections:
+      - "Page 3: Frontend - React (hoặc Vue.js)"
+      - "Page 4: Xây dựng Dashboard quản lý"
+      - "Tất cả các modules cần UI để interact"
+
+  scope:
+    included:
+      - "React application setup (Create React App hoặc Vite)"
+      - "Authentication flow (login, register, JWT handling)"
+      - "Workspace & Site management UI"
+      - "Keyword upload và management UI"
+      - "Drag-drop UI cho topic clustering"
+      - "Content plan creation và management"
+      - "Article viewing và editing"
+      - "Publishing interface"
+      - "Analytics dashboards với charts (Chart.js/Recharts)"
+      - "Notification center"
+      - "Settings pages"
+      - "Responsive design"
+    excluded:
+      - "Mobile app"
+      - "Advanced data visualizations (3D charts, etc.)"
+
+  dependencies:
+    - "PHASE-002"
+    - "PHASE-003"
+    - "PHASE-005"
+    - "PHASE-007"
+    - "PHASE-009"
+    - "PHASE-011"
+    - "PHASE-013"
+
+  inputs:
+    - name: "All backend APIs"
+      type: "api"
+      location: "All services expose REST APIs"
+
+  outputs:
+    - name: "React Dashboard Application"
+      type: "code"
+      location_hint: "frontend/dashboard/"
+    - name: "UI Components Library"
+      type: "code"
+      location_hint: "frontend/dashboard/src/components/"
+    - name: "API Client Layer"
+      type: "code"
+      location_hint: "frontend/dashboard/src/api/"
+
+  implementation_prompt: |
+    Triển khai **PHASE-015 – Dashboard & User Interface**.
+
+    YÊU CẦU:
+
+    1. **Project Setup**:
+    ```bash
+    npm create vite@latest frontend/dashboard -- --template react-ts
+    cd frontend/dashboard
+    npm install
+    npm install axios react-router-dom @tanstack/react-query
+    npm install react-dnd react-dnd-html5-backend  # drag-drop
+    npm install recharts  # charts
+    npm install @headlessui/react @heroicons/react  # UI components
+    npm install tailwindcss  # styling
+    ```
+
+    2. **Application Structure**:
+    ```
+    frontend/dashboard/
+    ├── src/
+    │   ├── components/
+    │   │   ├── auth/
+    │   │   │   ├── LoginForm.tsx
+    │   │   │   └── RegisterForm.tsx
+    │   │   ├── workspace/
+    │   │   │   ├── WorkspaceList.tsx
+    │   │   │   └── WorkspaceForm.tsx
+    │   │   ├── keywords/
+    │   │   │   ├── KeywordUpload.tsx
+    │   │   │   └── KeywordList.tsx
+    │   │   ├── clustering/
+    │   │   │   ├── DragDropClustering.tsx
+    │   │   │   └── ClusterCard.tsx
+    │   │   ├── content/
+    │   │   │   ├── ContentPlanForm.tsx
+    │   │   │   ├── ArticleEditor.tsx
+    │   │   │   └── ArticleList.tsx
+    │   │   ├── analytics/
+    │   │   │   ├── PerformanceChart.tsx
+    │   │   │   └── SummaryCards.tsx
+    │   │   └── layout/
+    │   │       ├── Sidebar.tsx
+    │   │       └── TopBar.tsx
+    │   ├── pages/
+    │   │   ├── Dashboard.tsx
+    │   │   ├── Keywords.tsx
+    │   │   ├── Clustering.tsx
+    │   │   ├── ContentPlans.tsx
+    │   │   ├── Articles.tsx
+    │   │   ├── Publishing.tsx
+    │   │   ├── Analytics.tsx
+    │   │   └── Settings.tsx
+    │   ├── api/
+    │   │   ├── client.ts
+    │   │   ├── auth.ts
+    │   │   ├── keywords.ts
+    │   │   ├── clusters.ts
+    │   │   ├── content.ts
+    │   │   └── analytics.ts
+    │   ├── hooks/
+    │   │   ├── useAuth.ts
+    │   │   ├── useWorkspace.ts
+    │   │   └── useKeywords.ts
+    │   ├── store/
+    │   │   └── authStore.ts
+    │   ├── App.tsx
+    │   └── main.tsx
+    ```
+
+    3. **API Client Setup**:
+    ```typescript
+    // api/client.ts
+    import axios from 'axios';
+    
+    const apiClient = axios.create({
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+      timeout: 30000,
+    });
+    
+    // Add JWT interceptor
+    apiClient.interceptors.request.use((config) => {
+      const token = localStorage.getItem('jwt_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+    
+    export default apiClient;
+    ```
+
+    4. **Key Features Implementation**:
+
+    A. **Authentication**:
+    ```typescript
+    // hooks/useAuth.ts
+    import { useQuery, useMutation } from '@tanstack/react-query';
+    import * as authAPI from '../api/auth';
+    
+    export function useAuth() {
+      const login = useMutation({
+        mutationFn: authAPI.login,
+        onSuccess: (data) => {
+          localStorage.setItem('jwt_token', data.token);
+        }
+      });
+      
+      const me = useQuery({
+        queryKey: ['me'],
+        queryFn: authAPI.getMe,
+      });
+      
+      return { login, me };
+    }
+    ```
+
+    B. **Keyword Upload**:
+    ```typescript
+    // components/keywords/KeywordUpload.tsx
+    function KeywordUpload() {
+      const [file, setFile] = useState<File | null>(null);
+      const uploadMutation = useMutation({
+        mutationFn: (data: FormData) => keywordsAPI.upload(data),
+        onSuccess: () => {
+          queryClient.invalidateQueries(['keyword-lists']);
+        }
+      });
+      
+      const handleSubmit = () => {
+        const formData = new FormData();
+        formData.append('file', file!);
+        formData.append('name', 'My Keywords');
+        uploadMutation.mutate(formData);
+      };
+      
+      return (
+        <div>
+          <input type="file" accept=".csv,.txt" onChange={...} />
+          <button onClick={handleSubmit}>Upload</button>
+        </div>
+      );
+    }
+    ```
+
+    C. **Drag-Drop Clustering**:
+    ```typescript
+    // components/clustering/DragDropClustering.tsx
+    import { DndProvider, useDrag, useDrop } from 'react-dnd';
+    
+    function ClusteringBoard() {
+      const [clusters, setClusters] = useState([]);
+      const [keywords, setKeywords] = useState([]);
+      
+      const handleDrop = (keywordId: string, clusterId: string) => {
+        // Call API to add keyword to cluster
+        clustersAPI.addKeyword(clusterId, keywordId);
+      };
+      
+      return (
+        <DndProvider backend={HTML5Backend}>
+          <div className="flex gap-4">
+            <KeywordPool keywords={keywords} />
+            <ClusterArea clusters={clusters} onDrop={handleDrop} />
+          </div>
+        </DndProvider>
+      );
+    }
+    ```
+
+    D. **Analytics Dashboard**:
+    ```typescript
+    // components/analytics/PerformanceChart.tsx
+    import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+    
+    function PerformanceChart({ articleId }: { articleId: string }) {
+      const { data } = useQuery({
+        queryKey: ['article-performance', articleId],
+        queryFn: () => analyticsAPI.getArticlePerformance(articleId)
+      });
+      
+      return (
+        <LineChart width={800} height={400} data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Line type="monotone" dataKey="position" stroke="#8884d8" name="Position" />
+          <Line type="monotone" dataKey="clicks" stroke="#82ca9d" name="Clicks" />
+        </LineChart>
+      );
+    }
+    ```
+
+    5. **Routing**:
+    ```typescript
+    // App.tsx
+    import { BrowserRouter, Routes, Route } from 'react-router-dom';
+    
+    function App() {
+      return (
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="keywords" element={<KeywordsPage />} />
+              <Route path="clustering" element={<ClusteringPage />} />
+              <Route path="content-plans" element={<ContentPlansPage />} />
+              <Route path="articles" element={<ArticlesPage />} />
+              <Route path="publishing" element={<PublishingPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      );
+    }
+    ```
+
+    6. **Deployment**:
+    - Build: `npm run build`
+    - Serve static files via Nginx hoặc CDN
+    - Environment variables cho API endpoint
+
+    KẾT QUẢ:
+    - Full-featured dashboard hoạt động
+    - Users có thể thực hiện tất cả operations qua UI
+    - Responsive design
+    - Good UX
+
+  acceptance_criteria:
+    - "Authentication flow hoạt động (login, register, logout)"
+    - "Workspace và Site management UI hoạt động"
+    - "Keyword upload UI hoạt động, files được upload"
+    - "Drag-drop clustering interface hoạt động"
+    - "Content plan creation form hoạt động"
+    - "Article list và editor hiển thị đúng"
+    - "Analytics charts render correctly với real data"
+    - "All pages responsive trên mobile/tablet/desktop"
+    - "Error handling và loading states implemented"
+    - "Build thành công và deploy được"
+
+  non_goals:
+    - "Mobile native app"
+    - "Offline support"
+    - "Advanced animations"
+
+  notes:
+    - "Sử dụng TailwindCSS cho styling nhanh"
+    - "React Query cho data fetching và caching"
+    - "Vite cho faster development experience"
+    - "TypeScript strongly recommended"

@@ -1,0 +1,380 @@
+phase:
+  id: "PHASE-002"
+  slug: "core-services"
+  title: "Core Services - API Gateway, Auth, Workspace Management"
+
+  summary: |
+    Xây dựng các dịch vụ lõi (Core Services) của hệ thống bao gồm API Gateway,
+    Authentication & Authorization, Workspace & Site Management, và Notification Service.
+    Phase này cũng thiết lập Event Bus (RabbitMQ) để các module có thể giao tiếp
+    bất đồng bộ. Đây là "xương sống" và "hệ điều hành" của toàn bộ platform.
+
+  goal: |
+    Hoàn thành việc xây dựng 4 core services hoạt động độc lập:
+    - Service 0A: API Gateway (routing, rate limiting)
+    - Service 0B: AuthN/AuthZ (JWT, users, API keys management)
+    - Service 0C: Workspace & Site Management (CRUD cho workspaces và sites)
+    - Service 0D: Notification Service (Email, Slack, UI notifications)
+    Đồng thời setup Event Bus (RabbitMQ) với pub/sub pattern để các module
+    có thể phát và lắng nghe events.
+
+  from_master_spec:
+    sections:
+      - "Page 3-4: Module 0 - Nền tảng Kỹ thuật & Dịch vụ Lõi"
+      - "Page 4: 3.2. Dịch vụ Lõi (Core Services)"
+      - "Service 0A (API Gateway)"
+      - "Service 0B (AuthN/AuthZ)"
+      - "Service 0C (Workspace & Site Mgmt)"
+      - "Service 0D (Notification)"
+      - "Page 3: Bus Sự kiện - RabbitMQ (Giai đoạn 1-2)"
+
+  scope:
+    included:
+      - "API Gateway service (Node.js + Express hoặc Go)"
+      - "Authentication & Authorization service (JWT, OAuth2)"
+      - "User management (CRUD operations)"
+      - "Workspace management (multi-tenant support)"
+      - "Site management (WordPress API configuration)"
+      - "API Keys management với encryption (HashiCorp Vault hoặc database encryption)"
+      - "Notification service (Email với SendGrid/SMTP, Slack webhooks)"
+      - "RabbitMQ setup với exchanges và queues"
+      - "Event schemas và message contracts"
+      - "Database migrations cho users, workspaces, sites tables"
+      - "API documentation (Swagger/OpenAPI)"
+      - "Unit tests và integration tests"
+    excluded:
+      - "Advanced security features (mTLS, zero-trust)"
+      - "Kafka integration (chỉ RabbitMQ cho giai đoạn 1-2)"
+      - "Business logic của các module nghiệp vụ (Module 1-6)"
+      - "Frontend Dashboard (sẽ làm ở PHASE-015)"
+      - "Advanced monitoring và tracing (có thể làm dần)"
+
+  dependencies:
+    - "PHASE-001"
+
+  inputs:
+    - name: "Infrastructure from PHASE-001"
+      type: "codebase"
+      location: "."
+      description: "Project structure, Docker, K8s manifests, databases"
+    - name: "Database connections"
+      type: "infrastructure"
+      location: "PostgreSQL, Redis"
+
+  outputs:
+    - name: "API Gateway Service"
+      type: "code"
+      description: "Service routing requests và rate limiting"
+      location_hint: "services/api-gateway/"
+    - name: "Auth Service"
+      type: "code"
+      description: "Authentication, authorization, user/workspace/site management"
+      location_hint: "services/auth-service/"
+    - name: "Notification Service"
+      type: "code"
+      description: "Email, Slack notification service"
+      location_hint: "services/notification-service/"
+    - name: "Event Bus Infrastructure"
+      type: "config"
+      description: "RabbitMQ setup, exchanges, queues"
+      location_hint: "infrastructure/rabbitmq/, k8s/rabbitmq/"
+    - name: "Database Schemas"
+      type: "code"
+      description: "Migrations cho users, workspaces, sites, api_keys tables"
+      location_hint: "migrations/002_core_services/"
+    - name: "API Documentation"
+      type: "docs"
+      description: "OpenAPI/Swagger specs"
+      location_hint: "docs/api/"
+    - name: "Tests"
+      type: "tests"
+      description: "Unit và integration tests"
+      location_hint: "services/*/tests/"
+
+  implementation_prompt: |
+    Bạn là senior backend engineer đang làm việc trong repository Auto-SEO.
+
+    Nhiệm vụ của bạn là triển khai **PHASE-002 – Core Services** theo đặc tả
+    trong file YAML này.
+
+    BỐI CẢNH:
+    - Dự án Auto-SEO đã có infrastructure foundation từ PHASE-001
+    - Phase này xây dựng 4 core services + Event Bus
+    - Kiến trúc: Microservices, Event-Driven
+    - Phase này có slug: core-services
+    - Scope bao gồm:
+      - API Gateway
+      - Auth Service (AuthN/AuthZ, Users, Workspaces, Sites)
+      - Notification Service
+      - RabbitMQ Event Bus
+      - Database migrations
+      - API documentation
+      - Tests
+    - Scope loại trừ:
+      - Business logic của Module 1-6
+      - Frontend Dashboard
+      - Kafka (chỉ RabbitMQ)
+    - Dependencies: PHASE-001 (infrastructure đã sẵn sàng)
+
+    YÊU CẦU KHI TRIỂN KHAI:
+
+    1. **Service 0A - API Gateway**:
+       Technology: Node.js (Express) hoặc Go
+       Responsibilities:
+       - Routing requests đến các services
+       - Rate limiting (dựa trên user/workspace)
+       - Request logging và tracing
+       - CORS handling
+       - Health check endpoints
+       
+       Endpoints:
+       - GET /health
+       - POST /api/v1/auth/* -> Auth Service
+       - POST /api/v1/workspaces/* -> Auth Service
+       - POST /api/v1/sites/* -> Auth Service
+       - (Các endpoints khác sẽ thêm trong các phase sau)
+
+       Features:
+       - JWT validation
+       - Rate limiting: 100 req/min per user, 1000 req/min per workspace
+       - Request/Response logging
+       - Graceful shutdown
+
+    2. **Service 0B - Auth Service**:
+       Technology: Python (FastAPI/Flask) hoặc Node.js (Express)
+       Responsibilities:
+       - User authentication (email/password, JWT)
+       - Authorization (role-based: admin, user, viewer)
+       - User CRUD
+       - Workspace CRUD (multi-tenant)
+       - Site CRUD (WordPress integration config)
+       - API Keys management (encrypted storage)
+       
+       Database Schema:
+       ```sql
+       users (
+         id UUID PRIMARY KEY,
+         email VARCHAR UNIQUE NOT NULL,
+         password_hash VARCHAR NOT NULL,
+         full_name VARCHAR,
+         role VARCHAR DEFAULT 'user',
+         created_at TIMESTAMP,
+         updated_at TIMESTAMP
+       )
+       
+       workspaces (
+         id UUID PRIMARY KEY,
+         name VARCHAR NOT NULL,
+         owner_id UUID REFERENCES users(id),
+         settings JSONB,
+         created_at TIMESTAMP,
+         updated_at TIMESTAMP
+       )
+       
+       workspace_members (
+         workspace_id UUID REFERENCES workspaces(id),
+         user_id UUID REFERENCES users(id),
+         role VARCHAR,
+         PRIMARY KEY (workspace_id, user_id)
+       )
+       
+       sites (
+         id UUID PRIMARY KEY,
+         workspace_id UUID REFERENCES workspaces(id),
+         name VARCHAR NOT NULL,
+         url VARCHAR NOT NULL,
+         wp_api_endpoint VARCHAR,
+         wp_auth_type VARCHAR, -- 'application_password' | 'jwt'
+         wp_credentials_encrypted TEXT,
+         status VARCHAR DEFAULT 'active',
+         created_at TIMESTAMP,
+         updated_at TIMESTAMP
+       )
+       
+       api_keys (
+         id UUID PRIMARY KEY,
+         workspace_id UUID REFERENCES workspaces(id),
+         service_name VARCHAR, -- 'openai', 'google', 'ahrefs', etc.
+         api_key_encrypted TEXT NOT NULL,
+         settings JSONB,
+         created_at TIMESTAMP
+       )
+       ```
+       
+       Endpoints:
+       - POST /auth/register
+       - POST /auth/login (returns JWT)
+       - POST /auth/refresh-token
+       - GET /auth/me
+       - CRUD /workspaces
+       - CRUD /workspaces/:id/sites
+       - CRUD /workspaces/:id/api-keys
+       
+       Security:
+       - Password hashing với bcrypt
+       - JWT với RS256
+       - API keys encryption với AES-256 (sử dụng secret key từ K8s Secret)
+       - HashiCorp Vault integration (optional, có thể làm sau)
+
+    3. **Service 0C - Workspace & Site Management**:
+       (Có thể tích hợp vào Auth Service hoặc tách riêng)
+       - Nếu tách riêng: Microservice riêng với CRUD operations
+       - Nếu tích hợp: Thêm vào Auth Service
+
+    4. **Service 0D - Notification Service**:
+       Technology: Python (FastAPI) hoặc Node.js
+       Responsibilities:
+       - Lắng nghe events từ RabbitMQ
+       - Gửi email notifications (SendGrid, AWS SES, hoặc SMTP)
+       - Gửi Slack notifications (webhooks)
+       - In-app notifications (lưu vào database, UI sẽ query)
+       
+       Events to listen:
+       - article.published
+       - job.failed
+       - workspace.created
+       - user.registered
+       
+       Database Schema:
+       ```sql
+       notifications (
+         id UUID PRIMARY KEY,
+         user_id UUID REFERENCES users(id),
+         workspace_id UUID,
+         type VARCHAR, -- 'email' | 'slack' | 'in_app'
+         title VARCHAR,
+         message TEXT,
+         metadata JSONB,
+         status VARCHAR, -- 'pending' | 'sent' | 'failed'
+         created_at TIMESTAMP,
+         sent_at TIMESTAMP
+       )
+       ```
+       
+       Features:
+       - Email templates (HTML)
+       - Retry mechanism khi gửi failed
+       - Rate limiting (tránh spam)
+
+    5. **RabbitMQ Event Bus**:
+       Setup:
+       - RabbitMQ deployment trong K8s (StatefulSet)
+       - Management UI enabled
+       - Persistence enabled
+       
+       Exchanges:
+       - `auto_seo.events` (topic exchange)
+       
+       Message Format:
+       ```json
+       {
+         "event_type": "article.published",
+         "timestamp": "2025-11-23T14:00:00Z",
+         "workspace_id": "uuid",
+         "payload": {
+           "article_id": "uuid",
+           "title": "...",
+           "url": "..."
+         },
+         "metadata": {
+           "source_service": "publishing-service",
+           "correlation_id": "uuid"
+         }
+       }
+       ```
+       
+       Event Schema Documentation:
+       - Tạo file docs/events/event-schemas.md
+       - Document tất cả event types
+       
+       Common Events (cho phase này):
+       - user.registered
+       - workspace.created
+       - site.created
+       - notification.requested
+
+    6. **API Documentation**:
+       - Sử dụng Swagger/OpenAPI 3.0
+       - Auto-generate từ code (FastAPI tự generate, Express dùng swagger-jsdoc)
+       - Host tại /api/docs
+       - Include authentication flows, request/response examples
+
+    7. **Testing**:
+       - Unit tests cho business logic
+       - Integration tests cho API endpoints
+       - E2E tests cho auth flow (register -> login -> access protected resource)
+       - RabbitMQ integration tests (publish/consume events)
+       - Minimum coverage: 80%
+
+    8. **Deployment**:
+       - Dockerfile cho mỗi service
+       - K8s Deployments với health checks
+       - K8s Services (ClusterIP cho internal, LoadBalancer cho API Gateway)
+       - ConfigMaps cho configuration
+       - Secrets cho sensitive data
+       - HorizontalPodAutoscaler (optional)
+
+    TECH STACK DETAILS:
+    - API Gateway: Node.js + Express + express-rate-limit
+    - Auth Service: Python + FastAPI + SQLAlchemy + PyJWT
+    - Notification Service: Python + FastAPI + aio-pika (RabbitMQ client)
+    - RabbitMQ: Latest stable with management plugin
+    - Database: PostgreSQL (from PHASE-001)
+    - Cache: Redis (for rate limiting, sessions)
+
+    BEST PRACTICES:
+    - Sử dụng dependency injection
+    - Tách configuration ra environment variables
+    - Logging structured (JSON format)
+    - Correlation IDs cho tracing
+    - Graceful shutdown cho tất cả services
+    - Health checks: /health (liveness), /ready (readiness)
+    - Metrics export cho Prometheus
+
+    GIỚI HẠN:
+    - Không implement business logic của Module 1-6
+    - Không build Dashboard UI (PHASE-015)
+    - Không implement advanced features như OAuth2 với Google/GitHub (có thể làm sau)
+    - RabbitMQ only, không Kafka
+
+    KẾT QUẢ CUỐI:
+    - API Gateway routing requests thành công
+    - Users có thể register, login, nhận JWT
+    - Users có thể tạo Workspaces và Sites
+    - API Keys được lưu trữ an toàn (encrypted)
+    - Notifications được gửi khi có events
+    - RabbitMQ hoạt động, events được publish/consume
+    - API documentation đầy đủ tại /api/docs
+    - Tests pass với coverage >= 80%
+    - Services deploy thành công trên K8s
+
+  acceptance_criteria:
+    - "API Gateway routing requests đến Auth Service thành công"
+    - "User registration và login flow hoạt động, JWT được issue"
+    - "Workspace CRUD operations hoạt động đúng (multi-tenant isolation)"
+    - "Site CRUD operations hoạt động, WordPress credentials được encrypt"
+    - "API Keys được lưu trữ encrypted trong database"
+    - "Notification Service nhận events từ RabbitMQ và gửi email/Slack"
+    - "RabbitMQ Management UI accessible và có thể monitor queues"
+    - "API documentation đầy đủ tại Swagger UI"
+    - "Unit tests pass với coverage >= 80%"
+    - "Integration tests pass cho auth flow và event publishing"
+    - "Services có thể deploy lên K8s và health checks pass"
+    - "Rate limiting hoạt động đúng (429 Too Many Requests khi vượt limit)"
+
+  non_goals:
+    - "Implement OAuth2 với third-party providers (Google, GitHub)"
+    - "Advanced RBAC với fine-grained permissions"
+    - "Two-factor authentication (2FA)"
+    - "Advanced API versioning strategy"
+    - "GraphQL API (chỉ REST)"
+    - "Kafka integration (chỉ RabbitMQ)"
+    - "Frontend Dashboard implementation"
+
+  notes:
+    - "Auth Service có thể combine với Workspace/Site Management trong một service duy nhất"
+    - "Cân nhắc sử dụng HashiCorp Vault cho secrets management trong production"
+    - "RabbitMQ có thể upgrade lên Kafka ở giai đoạn 3 khi cần performance cao hơn"
+    - "API Gateway có thể thay thế bằng Kong, Traefik, hoặc AWS API Gateway nếu cần"
+    - "Email service có thể switch giữa SMTP, SendGrid, AWS SES dễ dàng"
+    - "Notification Service nên support retry mechanism với exponential backoff"

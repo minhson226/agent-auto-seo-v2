@@ -1,0 +1,158 @@
+phase:
+  id: "PHASE-010"
+  slug: "seo-scoring-automation"
+  title: "Module 4 Stage 2 & 3 - SEO Scoring Automation & Self-Correction"
+
+  summary: |
+    Auto SEO scoring với HTML analysis, tactical correction loop,
+    và self-learning scorer.
+
+  goal: |
+    Auto scoring, auto correction, và adaptive scoring weights.
+
+  from_master_spec:
+    sections:
+      - "Page 7-8: Module 4 - Giai đoạn 2 & 3"
+      - "Giai đoạn 2: Internal Scorer tự động phân tích HTML"
+      - "Giai đoạn 2: Tactical Correction Loop - tự sửa"
+      - "Giai đoạn 3: Scorer tự học - điều chỉnh trọng số"
+
+  scope:
+    included:
+      - "Auto HTML analyzer (BeautifulSoup)"
+      - "Auto scoring engine"
+      - "Tactical correction loop (IF-THEN rules)"
+      - "Self-learning weight adjustment"
+      - "AI-based correction (re-prompt generation)"
+    excluded:
+      - "SurferSEO API integration (optional)"
+
+  dependencies:
+    - "PHASE-009"
+    - "PHASE-008"
+
+  inputs:
+    - name: "SEO Scorer from PHASE-009"
+      type: "codebase"
+      location: "services/seo-scorer/"
+
+  outputs:
+    - name: "Auto Scorer Engine"
+      type: "code"
+      location_hint: "services/seo-scorer/analyzer.py"
+    - name: "Correction Loop"
+      type: "code"
+      location_hint: "services/seo-scorer/corrector.py"
+
+  implementation_prompt: |
+    Triển khai **PHASE-010 – SEO Scoring Automation & Self-Correction**.
+
+    YÊU CẦU:
+
+    1. **Auto HTML Analyzer**:
+    ```python
+    from bs4 import BeautifulSoup
+    
+    class HTMLAnalyzer:
+        def analyze(self, html_content: str, target_keywords: List[str]):
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            return {
+                'title_contains_keyword': self._check_title(soup, target_keywords),
+                'h1_present': bool(soup.find('h1')),
+                'h2_count': len(soup.find_all('h2')),
+                'keyword_density': self._calc_density(soup, target_keywords),
+                'images_alt_tags': self._check_images(soup),
+                'word_count': len(soup.get_text().split()),
+                'internal_links': len([a for a in soup.find_all('a') if self._is_internal(a)]),
+                'score': 0  # calculated below
+            }
+    ```
+
+    2. **Auto Scorer**:
+    ```python
+    class AutoScorer:
+        def score(self, analysis: dict, weights: dict = None):
+            if weights is None:
+                weights = self.default_weights
+            
+            score = 0
+            max_score = 0
+            
+            for item, value in analysis.items():
+                if item in weights:
+                    max_score += weights[item]
+                    if value:
+                        score += weights[item]
+            
+            return int(score / max_score * 100)
+    ```
+
+    3. **Tactical Correction Loop**:
+    ```python
+    class TacticalCorrector:
+        async def correct(self, article_id: str, score_data: dict):
+            if score_data['score'] < 80:
+                issues = self._identify_issues(score_data)
+                
+                for issue in issues:
+                    if issue == 'missing_keyword_in_h2':
+                        await self._regenerate_with_fix(article_id, 
+                            "Add main keyword to H2 headings")
+                    elif issue == 'low_word_count':
+                        await self._regenerate_with_fix(article_id,
+                            "Expand content to 1500+ words")
+                
+                # Emit event to re-generate
+                await publish_event('article.generate.request', {
+                    'article_id': article_id,
+                    'correction_reason': issues
+                })
+    ```
+
+    4. **Self-Learning Weight Adjustment**:
+    ```python
+    class AdaptiveScorer:
+        async def adjust_weights(self, workspace_id: str):
+            # Get articles + their ranking performance from Module 6
+            articles = await get_articles_with_performance(workspace_id)
+            
+            # ML model to learn which factors correlate with good rankings
+            X = []  # SEO scores
+            y = []  # Ranking performance
+            
+            for article in articles:
+                X.append(article.seo_checklist_values)
+                y.append(article.avg_position < 10)
+            
+            # Train model to find optimal weights
+            model = LogisticRegression()
+            model.fit(X, y)
+            
+            # Update weights in database
+            new_weights = model.coef_
+            await update_workspace_weights(workspace_id, new_weights)
+    ```
+
+    5. **Events**:
+    - article.approved_for_publishing (score >= 80)
+    - article.generate.request (score < 80, needs correction)
+
+    KẾT QUẢ:
+    - Auto scoring hoạt động chính xác
+    - Correction loop tự sửa articles
+    - Weights tự điều chỉnh theo performance
+
+  acceptance_criteria:
+    - "Auto scorer phân tích HTML chính xác"
+    - "Score calculation accuracy >= 90%"
+    - "Correction loop trigger re-generation khi score < 80"
+    - "Weight adjustment improves scoring accuracy"
+    - "Events published correctly"
+    - "Tests pass"
+
+  non_goals:
+    - "SurferSEO API (optional enhancement)"
+
+  notes:
+    - "Correction loop có thể loop tối đa 3 lần để tránh infinite loop"

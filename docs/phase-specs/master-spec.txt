@@ -1,0 +1,399 @@
+Được. Đây là Tài liệu Đặc tả Kỹ thuật (Technical Specification Document) đầy đủ cho dự
+án của bạn, được tổng hợp từ toàn bộ các phân tích của chúng ta.
+
+
+
+
+📄 Tài liệu Đặc tả Kỹ thuật: Project Auto-SEO
+Tên dự án: Project Auto-SEO
+Phiên bản: 1.0
+Ngày: 9/11/2025
+Kiến trúc sư: Gemini AI
+
+
+
+1.   🎯 Tổng quan & Mục tiêu
+Project Auto-SEO là một Nền tảng Tự động hóa Content và SEO (Content & SEO Automation
+Platform) với khả năng tự học, tự tối ưu và tự vận hành.
+
+Mục tiêu: Xây dựng một hệ thống đa-người dùng (multi-tenant) cho phép quản lý nhiều trang
+blog, tự động phân tích từ khóa, lập chiến lược nội dung, tự động viết bài chuẩn SEO, đăng
+bài, và tự học (self-learning) dựa trên hiệu suất thực tế (Google Analytics, GSC) để cải tiến
+chiến lược và tối ưu chi phí.
+
+Triết lý Kiến trúc:
+ ●​ Microservices: Hệ thống được chia nhỏ thành các "engines" độc lập, dễ dàng phát triển,
+    nâng cấp và mở rộng quy mô.
+ ●​ Event-Driven (EDA): Các module giao tiếp với nhau bất đồng bộ qua một Bus Sự kiện
+    (Event Bus). Điều này đảm bảo tính ổn định và khả năng phục hồi.
+ ●​ Polyglot: Chọn ngôn ngữ lập trình tốt nhất cho từng công việc (ví dụ: Python cho AI,
+    Node.js cho I/O).
+ ●​ Cloud-Native & Kubernetes-Native: Thiết kế để chạy trên Kubernetes, tận dụng khả
+    năng tự động co giãn (auto-scaling) và tự phục hồi (self-healing).
+
+
+
+2.   🗺️ Sơ đồ Kiến trúc Tổng thể (High-Level Architecture)
+Luồng vận hành cốt lõi: Người dùng tương tác qua Dashboard. Yêu cầu đi qua API Gateway,
+được xác thực và sau đó được chuyển thành các "sự kiện" (events). Các Microservices
+(Engines) lắng nghe và xử lý các sự kiện này một cách độc lập.
+
+
+
+
+3. 🛠️
+    Module 0: Nền tảng Kỹ thuật & Dịch vụ Lõi (Technical
+Foundation)
+
+
+Đây là "xương sống" và "hệ điều hành" của toàn bộ dự án.
+3.1. Ngăn xếp Công nghệ (Technology Stack)
+
+
+
+ Hạng mục                  Lựa chọn Đề xuất           Lý do & Tùy chọn
+                           (Recommended)              (Rationale & Options)
+
+
+ Ngôn ngữ (Polyglot)       Python (Chủ đạo),          Python: Bắt buộc cho
+                           Node.js, Go                AI/ML, NLP, Data (Module 2,
+                                                      3, 4, 6).
+
+                                                      Node.js: Hiệu suất I/O tốt
+                                                      cho API Gateway, BFF, gọi
+                                                      API bên thứ 3 (Module 1, 5).
+
+                                                      Go (Tùy chọn): Dùng cho
+                                                      các worker cần
+                                                      concurrency cao (Scraping,
+                                                      Internal Linker).
+
+ Bus Sự kiện               RabbitMQ (Giai đoạn 1-2)   Hoàn hảo cho Task Queue
+                                                      & Pub/Sub. Dễ vận hành.
+
+                                                      Nâng cấp lên Kafka (Giai
+                                                      đoạn 3) khi cần xử lý
+                                                      streaming dữ liệu hiệu suất
+                                                      cực cao.
+
+ CSDL (Primary)            PostgreSQL (v15+)          Ổn định, hỗ trợ JSONB, có
+                                                      pgvector cho semantic
+                                                      search cơ bản.
+
+
+ CSDL (Cache)              Redis                      Dùng cho cache session,
+                                                      cấu hình, và hàng đợi job
+                                                      nhỏ.
+
+
+ CSDL (Analytics)          ClickHouse (hoặc           Bắt buộc cho Module 6
+                           BigQuery)                  (OLAP). ClickHouse có thể
+                                                      tự host, tối ưu chi phí.
+
+
+ Frontend                  React (hoặc Vue.js)        Xây dựng Dashboard quản
+                                                                 lý.
+
+
+
+
+3.2. Dịch vụ Lõi (Core Services)
+
+
+ ●​ Service 0A (API Gateway): "Cổng" duy nhất cho mọi request. Chịu trách nhiệm điều
+    tuyến (routing), rate limiting.
+ ●​ Service 0B (AuthN/AuthZ): Dịch vụ Xác thực & Phân quyền. Quản lý JWT, Users,
+    Workspaces, và mã hóa (trong Vault) API keys (WordPress, Google, AI...).
+ ●​ Service 0C (Workspace & Site Mgmt): Service CRUD để quản lý Sites (lưu URL WP, API
+    endpoint) và Workspaces (khách hàng).
+ ●​ Service 0D (Notification): Dịch vụ gửi thông báo (Email, Slack, UI) khi có sự kiện (ví dụ:
+    article.published, job.failed).
+
+
+
+3.3. Hạ tầng & Vận hành (Infrastructure & DevOps)
+
+
+ ●​ Containerization: Docker (Toàn bộ microservices phải được đóng gói).
+ ●​ Orchestration: Kubernetes (K8s) (Bắt buộc. Dùng để Tự động Scale, Tự phục hồi).
+ ●​ Monitoring (Observability): Prometheus (Metrics), Grafana (Dashboards), Loki
+    (Logs).
+ ●​ CI/CD: GitHub Actions hoặc GitLab CI (Tự động build, test, deploy lên K8s).
+ ●​ Storage: MinIO (Tự host, tương thích S3) hoặc AWS S3 (Lưu trữ file, nội dung bài viết).
+
+
+
+4.   ⚙️ Chi tiết các Module Nghiệp vụ (Engines)
+Chi tiết lộ trình phát triển 3 giai đoạn cho từng engine.
+
+
+
+📊 Module 1: Keyword & Data Ingestion Engine
+ ●​ Mục đích: Nhận và chuẩn hóa dữ liệu từ khóa đầu vào.
+ ●​ Lộ trình Phát triển:
+ Tính năng              Giai đoạn 1 (MVP)       Giai đoạn 2             Giai đoạn 3
+                                                (Automation)            (Self-Learning)
+
+
+ Nhập dữ liệu           Upload thủ công         - API Connectors:       - Real-time: Tích
+                        file CSV/TXT            Tự động kéo từ          hợp Google Trends
+                        (Google Keyword         khóa từ                 API để tự động
+                        Planner).               Ahrefs/SEMrush.         phát hiện từ khóa
+                                                                        "nóng".
+                                                - Cho phép paste
+                                                danh sách vào UI.
+
+ Xử lý dữ liệu          Đọc file, chuẩn hóa     - Tự động gọi API       - Sử dụng NLP
+                        (lowercase, xóa         (miễn phí) để lấy       model nội bộ để tự
+                        trùng).                 "Search Intent" cơ      động phân loại
+                                                bản.                    Intent
+                                                                        (Informational,
+                                                                        Commercial...).
+
+●​ Mô hình Dữ liệu (PostgreSQL): Keywords(id, list_id, text, status: 'pending', intent:
+   'unknown')
+●​ Output (Sự kiện): keyword.list.imported
+
+
+
+🧠 Module 2: SEO Strategy & Planning Engine
+●​ Mục đích: Phân tích, xây dựng ma trận từ khóa (Topic Cluster) và lên kế hoạch (Content
+   Plan).
+●​ Lộ trình Phát triển:
+
+ Tính năng              Giai đoạn 1 (MVP)       Giai đoạn 2             Giai đoạn 3
+                                                (Automation)            (Self-Learning)
+
+
+ Phân cụm               Thủ công. UI            - Tự động cơ bản:       - Tự động ngữ
+ (Clustering)           "Kéo-Thả"               Dùng                    nghĩa: Dùng
+                        (Drag-Drop) để          TF-IDF/K-Means          Embeddings
+                        user tự nhóm từ         để gợi ý cụm. User      Model (SBERT) để
+                        khóa thành Topic        duyệt và "Accept".      nhóm theo ý nghĩa
+                        Clusters.                                       (semantic).
+
+
+ Phân tích đối thủ      Thủ công. User tự       - Tự động gọi API       - SERP Analysis
+                        nhập URL đối thủ.      (Ahrefs/SEMrush)        Engine: Service
+                                               lấy Top 10 đối thủ.     chuyên dụng tự
+                                                                       "cào" (scrape) Top
+                                               - Phân tích cơ bản      10 Google, phân
+                                               (đếm chữ, H1, H2).      tích cấu trúc,
+                                                                       entities.
+
+
+ Tạo Kế hoạch           User tự tạo Content    - Rule-Based            - Predictive
+                        Plan và set Priority   Engine: Tự động         Model: Dựa trên
+                        thủ công.              gán Priority theo       data Module 6, ML
+                                               Volume/KD.              dự đoán "từ khóa
+                                                                       nào sẽ rank" và tự
+                                                                       động tạo Content
+                                                                       Plan.
+
+●​ Mô hình Dữ liệu (PostgreSQL): TopicClusters(id, name, type: 'pillar'), ContentPlans(id,
+   cluster_id, title, priority, competitors_data_json)
+●​ Output (Sự kiện): content.plan.created
+
+
+
+🤖 Module 3: Smart Content Generation Engine
+●​ Mục đích: "Nhà máy" sản xuất nội dung, với bộ định tuyến chi phí thông minh.
+●​ Lộ trình Phát triển:
+
+ Tính năng              Giai đoạn 1 (MVP)      Giai đoạn 2             Giai đoạn 3
+                                               (Automation)            (Self-Learning)
+
+
+ Lên lịch               Thủ công. User         - Lên lịch tự động:     - Lịch thông minh:
+ (Scheduler)            bấm nút "Viết bài      Cron job tự động        Lịch đăng dựa trên
+                        ngay".                 quét ContentPlans       dữ liệu traffic (từ
+                                               và tạo ArticleJob       Module 6).
+                                               theo priority.
+
+
+ Viết bài               - Một model duy        - LLM Gateway           - RAG
+ (Generation)           nhất (ví dụ:           Service: Lớp trừu       (Retrieval-Augme
+                        GPT-3.5-Turbo) với     tượng để gọi nhiều      nted Generation):
+                        prompt cứng.           API (Gemini, GPT,       Tự động tìm thông
+                                               Grok...).               tin mới (dùng SERP
+                                                                       data từ Module 2)
+                                                -                       và "nhồi" vào
+                                                Cost-Optimization       prompt cho AI.
+                                                Router: Logic
+                                                IF-THEN để chọn
+                                                model theo priority
+                                                (High -> GPT-4o;
+                                                Low -> DeepSeek).
+
+ Nguồn ảnh              Thủ công. User tự       - Tự động (Miễn         - AI Image
+                        upload.                 phí): Tích hợp API      Generation: Tích
+                                                Pexels, Unsplash.       hợp DALL-E 3 /
+                                                                        Stable Diffusion để
+                                                                        tạo ảnh độc quyền.
+
+●​ Mô hình Dữ liệu (PostgreSQL): Articles(id, plan_id, status: 'draft', ai_model_used, cost)
+●​ Mô hình Dữ liệu (Object Storage): bucket/articles/<article_id>.html (lưu nội dung).
+●​ Output (Sự kiện): article.generated
+
+
+
+📈 Module 4: SEO Scoring & Self-Correction Engine
+●​ Mục đích: Tự chấm điểm SEO và thực thi "Vòng lặp tự học chiến thuật" (Tactical Loop).
+●​ Lộ trình Phát triển:
+
+ Tính năng              Giai đoạn 1 (MVP)       Giai đoạn 2             Giai đoạn 3
+                                                (Automation)            (Self-Learning)
+
+
+ Chấm điểm              Thủ công. UI hiển       - Internal Scorer       - Scorer tự học:
+ (Scoring)              thị checklist (Tiêu     (Tự động): Service      Dựa trên data
+                        đề, H2, ảnh...) cho     (Python/BeautifulS      Module 6, hệ thống
+                        user tự tick.           oup) tự phân tích       tự điều chỉnh trọng
+                                                HTML và chấm            số (weight) của
+                                                điểm (ví dụ:            checklist.
+                                                82/100).
+                                                                        - (Tùy chọn) Tích
+                                                                        hợp API SurferSEO.
+
+ Tự sửa                 Không có. User tự       - Tactical              - Sửa lỗi ngữ
+ (Correction)           sửa tay.                Correction Loop         nghĩa: Dùng AI
+                                                (Tự động):              (Gemini/GPT-4) để
+                                                                        đọc bài viết và đọc
+                                                IF score < 80 AND       lý do fail -> AI tự
+                                                reason ==               viết lại prompt hoàn
+                                                'missing_keyword_i      toàn mới để sửa lỗi.
+                                                n_h2'
+
+                                                -> Auto-update
+                                                prompt
+
+                                                -> Bắn lại sự kiện
+                                                'article.generate.re
+                                                quest' (quay lại
+                                                Module 3).
+●​ Mô hình Dữ liệu (PostgreSQL): SeoScore(article_id, auto_score: 82, checklist_json: '[...]',
+   status: 'passed')
+●​ Output (Sự kiện): article.approved_for_publishing (nếu score > 80) HOẶC
+   article.generate.request (nếu score < 80, lặp lại).
+
+
+
+🚀 Module 5: Publishing & Linking Engine
+●​ Mục đích: Đăng bài lên WP và quản lý, xây dựng mạng lưới internal link thông minh.
+●​ Lộ trình Phát triển:
+
+ Tính năng              Giai đoạn 1 (MVP)       Giai đoạn 2             Giai đoạn 3
+                                                (Automation)            (Self-Learning)
+
+
+ Đăng bài               Copy-Paste. User        - WP Publisher          - Multi-Platform:
+ (Publishing)           tự copy HTML từ         Service: Tự động        Mở rộng để đăng
+                        Dashboard và            đăng bài lên WP         lên Ghost,
+                        paste vào WP.           qua WP API              Medium,
+                                                (Application            Webflow...
+                                                Passwords).
+                                                                        - Tự động ping
+                                                                        Google Indexing
+                                                                        API.
+
+ Internal Linking       Không có.               - Cơ bản (Cron          - Internal Link
+                                                Job): Hàng đêm,         Injector (Thông
+                                                Job chạy, tìm các       minh):
+                                                bài cũ có chứa
+                                              chính xác từ khóa      1. Dùng
+                                              (string matching)      Embeddings
+                                              của bài mới và chèn    (SBERT) để tìm các
+                                              link.                  bài cũ liên quan về
+                                                                     mặt ngữ nghĩa.
+
+                                                                     2. Dùng AI (Gemini)
+                                                                     để viết lại một câu
+                                                                     trong bài cũ để
+                                                                     chèn link mới vào
+                                                                     một cách tự nhiên
+                                                                     nhất.
+●​ Mô hình Dữ liệu (PostgreSQL): PublishedPosts(article_id, site_id, wp_post_id: 123,
+   auto_url: '...'), InternalLinkMap(from_post_id, to_post_id, anchor_text)
+●​ Output (Sự kiện): article.published
+
+
+
+🔄 Module 6: Feedback & Strategic Learning Engine
+●​ Mục đích: "Bộ não chiến lược" (Strategic Loop). Hoàn thiện vòng lặp tự học dựa trên
+   hiệu suất thực tế.
+●​ Lộ trình Phát triển:
+
+ Tính năng             Giai đoạn 1 (MVP)      Giai đoạn 2            Giai đoạn 3
+                                              (Automation)           (Self-Learning)
+
+
+ Thu thập Dữ liệu      Thủ công. User tự      - Data Ingestor        - Thu thập dữ liệu
+                       xem GA/GSC và          (Tự động): Worker      chi phí (từ Module
+                       nhập rank vào          hàng ngày tự gọi       3) và so sánh Cost
+                       Dashboard.             API của GA & GSC,      vs Rank.
+                                              kéo dữ liệu
+                                              (Impressions,
+                                              Clicks, Position)
+                                              cho các URL đã
+                                              đăng.
+
+
+ Báo cáo               Báo cáo cơ bản         - Dashboard Phân       - Correlational
+ (Reporting)           (dựa trên data user    tích: Hiển thị biểu    Analysis: Báo cáo
+                       nhập).                 đồ cho user thấy       "sâu": "Các bài viết
+                                              bài nào đang rank,     dùng GPT-4o có
+                                                bài nào không.          avg_position cao
+                                                                        hơn 30% so với
+                                                                        GPT-3.5."
+
+
+ Tự học (Learning)      Không có. User tự       - Alerting: Hệ          - Strategy
+                        rút kinh nghiệm.        thống tự động báo       Re-evaluation
+                                                (Alert) cho user:       Engine (Tự động):
+                                                "Cụm chủ đề 'XYZ'
+                                                không có hiệu suất      1. Phát hiện:
+                                                tốt."                   "Cluster 'XYZ'
+                                                                        (dùng Prompt_A,
+                                                                        Model_Gemini1.0)
+                                                                        đã 30 ngày không
+                                                                        rank."
+
+                                                                        2. Hành động: Tự
+                                                                        động quay lại
+                                                                        Module 2 và tạo
+                                                                        một ContentPlan
+                                                                        mới để "Viết lại
+                                                                        (Rewrite)" cluster
+                                                                        'XYZ' với chiến lược
+                                                                        mới (ví dụ:
+                                                                        Prompt_B,
+                                                                        Model_Gemini1.5).
+●​ Mô hình Dữ liệu (ClickHouse/BigQuery): FactPerformance(date, url_hash, impressions,
+   clicks, position, ai_model_used, prompt_id, cost_usd)
+●​ Output (Sự kiện): content.plan.regenerate (gửi cho Module 2).
+
+
+
+5.   🗃️ Kiến trúc Dữ liệu Tổng thể (Data Architecture Summary)
+1.​ Central DB (PostgreSQL): Cơ sở dữ liệu nghiệp vụ (OLTP). Lưu trữ "trạng thái" của hệ
+    thống (users, sites, keywords, content_plans, articles_metadata, jobs).
+2.​ Object Storage (S3 / MinIO): Lưu trữ các "vật thể" (artifacts) lớn. (File CSV đầu vào, nội
+    dung HTML/Markdown của bài viết, ảnh, logs chi tiết).
+3.​ Data Warehouse (ClickHouse): Cơ sở dữ liệu phân tích (OLAP). Lưu trữ dữ liệu hiệu
+    suất (từ Module 6) để thực hiện các truy vấn phân tích phức tạp, phục vụ cho "bộ não" tự
+    học.
+6.   🚀 Khả năng Mở rộng & Tương lai (Scalability & Future-Proofing)
+Kiến trúc này được thiết kế để "mở" từ đầu:
+ ●​ Mở rộng AI: Thêm một model AI mới (ví dụ: Claude 5) chỉ đơn giản là thêm một "driver"
+    mới vào LLM Gateway Service (Module 3).
+ ●​ Mở rộng Nền tảng: Đăng bài lên Webflow/Ghost? Chỉ cần thêm một "Publisher Service"
+    mới (trong Module 5) lắng nghe cùng sự kiện article.approved_for_publishing.
+ ●​ Mở rộng Tính năng: Đăng bài lên Mạng xã hội? Thêm một "Social Media Service" lắng
+    nghe sự kiện article.published để tóm tắt (dùng AI) và đăng.
+ ●​ Mở rộng Quy mô: Nếu Module 3 (Viết bài) bị quá tải, Kubernetes sẽ tự động scale (tăng
+    số lượng pods) chỉ cho service đó mà không ảnh hưởng đến phần còn lại của hệ thống.
+
+Tài liệu đặc tả này cung cấp một lộ trình rõ ràng để xây dựng một hệ thống từ Giai đoạn 1
+(MVP) đến Giai đoạn 3 (Hoàn toàn tự học), đảm bảo nền tảng kỹ thuật vững chắc cho sự phát
+triển lâu dài.
+

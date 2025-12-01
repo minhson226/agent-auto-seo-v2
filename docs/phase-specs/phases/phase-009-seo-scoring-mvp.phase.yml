@@ -1,0 +1,98 @@
+phase:
+  id: "PHASE-009"
+  slug: "seo-scoring-mvp"
+  title: "Module 4 MVP - SEO Scoring Engine"
+
+  summary: |
+    Xây dựng MVP cho SEO scoring với manual checklist. UI hiển thị checklist
+    để user tự tick, chưa có auto scoring.
+
+  goal: |
+    Manual SEO scoring interface và checklist management.
+
+  from_master_spec:
+    sections:
+      - "Page 7-8: Module 4 - SEO Scoring & Self-Correction Engine"
+      - "Giai đoạn 1 (MVP): Thủ công. UI hiển thị checklist cho user tự tick"
+
+  scope:
+    included:
+      - "SEO checklist definition"
+      - "Manual scoring UI support APIs"
+      - "Score calculation based on checklist"
+      - "Database schema: seo_scores table"
+    excluded:
+      - "Auto scoring - PHASE-010"
+      - "Auto correction - PHASE-010"
+
+  dependencies:
+    - "PHASE-007"
+
+  inputs:
+    - name: "Articles from Module 3"
+      type: "data"
+      location: "articles table"
+
+  outputs:
+    - name: "SEO Scoring Service"
+      type: "code"
+      location_hint: "services/seo-scorer/"
+
+  implementation_prompt: |
+    Triển khai **PHASE-009 – SEO Scoring MVP**.
+
+    YÊU CẦU:
+
+    1. **Database Schema**:
+    ```sql
+    CREATE TABLE seo_scores (
+      id UUID PRIMARY KEY,
+      article_id UUID REFERENCES articles(id),
+      manual_score INTEGER,
+      auto_score INTEGER,
+      checklist JSONB,
+      status VARCHAR(50) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    ```
+
+    2. **SEO Checklist**:
+    ```json
+    {
+      "title_contains_keyword": false,
+      "h1_present": false,
+      "h2_count_adequate": false,
+      "keyword_density_ok": false,
+      "images_have_alt": false,
+      "meta_description": false,
+      "internal_links": false,
+      "external_links": false,
+      "word_count_adequate": false,
+      "readability_ok": false
+    }
+    ```
+
+    3. **Score Calculation**:
+    Total score = sum of checked items / total items * 100
+
+    4. **API Endpoints**:
+    - POST /api/v1/seo-scores
+    - GET /api/v1/seo-scores?article_id=uuid
+    - PUT /api/v1/seo-scores/{id}
+
+    KẾT QUẢ:
+    - Manual scoring works
+    - Checklist stored correctly
+    - Score calculated accurately
+
+  acceptance_criteria:
+    - "Checklist CRUD hoạt động"
+    - "Score calculation chính xác"
+    - "Tests pass"
+
+  non_goals:
+    - "Auto scoring"
+    - "Auto correction"
+
+  notes:
+    - "Checklist có thể customize per workspace"
