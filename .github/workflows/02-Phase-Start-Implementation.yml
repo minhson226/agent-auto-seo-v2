@@ -29,12 +29,15 @@ jobs:
       - name: "Find phase file by ID"
         id: find_phase
         run: |
+          set -e
           PHASE_ID="${{ github.event.inputs.phase_id }}"
+          echo "Looking for phase with ID: $PHASE_ID"
 
           FILE=$(ls docs/phase-specs/phases | grep -i "${PHASE_ID,,}" || true)
 
           if [ -z "$FILE" ]; then
             echo "ERROR: Could not find phase file for ID: $PHASE_ID"
+            ls docs/phase-specs/phases || true
             exit 1
           fi
 
@@ -43,28 +46,72 @@ jobs:
 
           echo "phase_file=$PHASE_FILE" >> $GITHUB_OUTPUT
 
+      - name: "Setup Python (for metadata parsing)"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: "Read phase metadata (title & slug)"
         id: phase_meta
+        env:
+          PHASE_FILE: ${{ steps.find_phase.outputs.phase_file }}
         run: |
-          PHASE_FILE="${{ steps.find_phase.outputs.phase_file }}"
+          set -e
+          echo "Reading metadata from: $PHASE_FILE"
 
-          TITLE=$(grep -E "^\\s*title:" "$PHASE_FILE" | head -n1 | sed 's/^[^:]*://; s/^ *//')
-          SLUG=$(grep -E "^\\s*slug:" "$PHASE_FILE" | head -n1 | sed 's/^[^:]*://; s/^ *//')
+          python - << 'PY'
+          import os, yaml
 
-          echo "Phase title: $TITLE"
-          echo "Phase slug : $SLUG"
+          phase_file = os.environ["PHASE_FILE"]
+          print(f"Loading YAML from {phase_file}")
 
-          echo "phase_title=$TITLE" >> $GITHUB_OUTPUT
-          echo "phase_slug=$SLUG" >> $GITHUB_OUTPUT
+          with open(phase_file, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+          title = str(data.get("title", "")).strip()
+          slug = str(data.get("slug", "")).strip()
+
+          # Remove wrapping quotes if present
+          if (title.startswith('"') and title.endswith('"')) or (title.startswith("'") and title.endswith("'")):
+              title = title[1:-1].strip()
+          if (slug.startswith('"') and slug.endswith('"')) or (slug.startswith("'") and slug.endswith("'")):
+              slug = slug[1:-1].strip()
+
+          print(f"Phase title (raw): {title}")
+          print(f"Phase slug  (raw): {slug}")
+
+          # Escape for safe use in bash / heredoc
+          def esc(s: str) -> str:
+              return (
+                  s.replace("\\", "\\\\")
+                   .replace("$", "\\$")
+                   .replace("`", "\\`")
+                   .replace('"', '\\"')
+              )
+
+          title_out = esc(title)
+          slug_out = esc(slug)
+
+          gh_out = os.environ["GITHUB_OUTPUT"]
+          with open(gh_out, "a", encoding="utf-8") as out:
+              out.write(f"phase_title={title_out}\n")
+              out.write(f"phase_slug={slug_out}\n")
+          PY
 
       - name: "Create implementation branch"
         id: branch
         run: |
+          set -e
           BASE_BRANCH="${{ github.event.inputs.base_branch }}"
           PHASE_ID="${{ github.event.inputs.phase_id }}"
           SLUG="${{ steps.phase_meta.outputs.phase_slug }}"
 
           BRANCH_NAME="copilot/impl-${PHASE_ID}-${SLUG}-run-${{ github.run_id }}"
+
+          echo "Base branch   : $BASE_BRANCH"
+          echo "Phase ID      : $PHASE_ID"
+          echo "Phase slug    : $SLUG"
+          echo "New branch    : $BRANCH_NAME"
 
           git checkout "$BASE_BRANCH"
           git switch -c "$BRANCH_NAME"
@@ -75,6 +122,7 @@ jobs:
       - name: "Create phase run log file"
         id: run_log
         run: |
+          set -e
           PHASE_ID="${{ github.event.inputs.phase_id }}"
           TS=$(date +"%Y%m%d-%H%M%S")
 
@@ -84,67 +132,88 @@ jobs:
           mkdir -p "$LOG_DIR"
 
           cat > "$LOG_FILE" <<EOF
-          # Phase Run Log – $PHASE_ID
+# Phase Run Log – $PHASE_ID
 
-          - Phase file: ${{ steps.find_phase.outputs.phase_file }}
-          - Title: ${{ steps.phase_meta.outputs.phase_title }}
-          - Slug: ${{ steps.phase_meta.outputs.phase_slug }}
-          - Branch: ${{ steps.branch.outputs.branch_name }}
-          - Started at: $TS
-          - Status: INIT
-          - Attempts: 0
-          - Notes:
-            - Run created by workflow 02-Phase-Start-Implementation.
-          EOF
+- Phase file: ${{ steps.find_phase.outputs.phase_file }}
+- Title: ${{ steps.phase_meta.outputs.phase_title }}
+- Slug: ${{ steps.phase_meta.outputs.phase_slug }}
+- Branch: ${{ steps.branch.outputs.branch_name }}
+- Started at: $TS
+- Status: INIT
+- Attempts: 0
+- Notes:
+  - Run created by workflow 02-Phase-Start-Implementation.
+EOF
+
+          echo "Created log file: $LOG_FILE"
 
           echo "log_file=$LOG_FILE" >> $GITHUB_OUTPUT
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
 
       - name: "Commit run log & push branch"
         run: |
+          set -e
+          BRANCH_NAME="${{ steps.branch.outputs.branch_name }}"
+          LOG_FILE="${{ steps.run_log.outputs.log_file }}"
+
+          echo "Committing log file $LOG_FILE on branch $BRANCH_NAME"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add "$LOG_FILE"
-          git commit -m "chore: start implementation for ${{ github.event.inputs.phase_id }}"
+          git commit -m "chore: start implementation for ${{ github.event.inputs.phase_id }}" || echo "Nothing to commit"
           git push origin "$BRANCH_NAME"
 
       - name: "Create issue for Copilot phase implementation"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -e
           PHASE_ID="${{ github.event.inputs.phase_id }}"
           PHASE_FILE="${{ steps.find_phase.outputs.phase_file }}"
           PHASE_TITLE="${{ steps.phase_meta.outputs.phase_title }}"
           BRANCH_NAME="${{ steps.branch.outputs.branch_name }}"
-          LOG_FILE="${LOG_FILE}"
+          LOG_FILE="${{ steps.run_log.outputs.log_file }}"
+
+          echo "Preparing issue for phase:"
+          echo "  PHASE_ID    = $PHASE_ID"
+          echo "  PHASE_FILE  = $PHASE_FILE"
+          echo "  PHASE_TITLE = $PHASE_TITLE"
+          echo "  BRANCH_NAME = $BRANCH_NAME"
+          echo "  LOG_FILE    = $LOG_FILE"
 
           TITLE="Implement ${PHASE_ID} – ${PHASE_TITLE}"
 
           BODY=$(cat <<EOF
-          @copilot
+@copilot
 
-          Please implement **${PHASE_ID} – ${PHASE_TITLE}** according to the phase spec.
+Please implement **${PHASE_ID} – ${PHASE_TITLE}** according to the phase spec.
 
-          Context
+Context
 
-          - Phase file: \`${PHASE_FILE}\`
-          - Implementation branch: \`${BRANCH_NAME}\`
-          - Run log: \`${LOG_FILE}\`
-          - Base branch: \`${{ github.event.inputs.base_branch }}\`
+- Phase file: \`${PHASE_FILE}\`
+- Implementation branch: \`${BRANCH_NAME}\`
+- Run log: \`${LOG_FILE}\`
+- Base branch: \`${{ github.event.inputs.base_branch }}\`
 
-          Tasks
+Tasks
 
-          1. Read the phase spec in \`${PHASE_FILE}\` (including scope, outputs, implementation_prompt).
-          2. Implement the phase on branch \`${BRANCH_NAME}\` following \`implementation_prompt\`.
-          3. Add/adjust tests so that acceptance_criteria are verified.
-          4. Open a Pull Request from \`${BRANCH_NAME}\` to \`${{ github.event.inputs.base_branch }}\`.
+1. Read the phase spec in \`${PHASE_FILE}\` (including scope, outputs, implementation_prompt).
+2. Implement the phase on branch \`${BRANCH_NAME}\` following \`implementation_prompt\`.
+3. Add/adjust tests so that acceptance_criteria are verified.
+4. Open a Pull Request from \`${BRANCH_NAME}\` to \`${{ github.event.inputs.base_branch }}\`.
 
-          After this issue is assigned to you, please:
-          - Work only on branch \`${BRANCH_NAME}\`.
-          - Update tests and code until the CI workflow passes.
-          EOF
-          )
+After this issue is assigned to you, please:
+- Work only on branch \`${BRANCH_NAME}\`.
+- Update tests and code until the CI workflow passes.
+EOF
+)
+
+          echo "==== Issue title ===="
+          echo "$TITLE"
+          echo "==== Issue body (first lines) ===="
+          echo "$BODY" | head -n 40
 
           gh issue create \
             --title "$TITLE" \
