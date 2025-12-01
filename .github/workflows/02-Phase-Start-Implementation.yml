@@ -132,18 +132,18 @@ jobs:
           mkdir -p "$LOG_DIR"
 
           cat > "$LOG_FILE" <<EOF
-# Phase Run Log – $PHASE_ID
+          # Phase Run Log – $PHASE_ID
 
-- Phase file: ${{ steps.find_phase.outputs.phase_file }}
-- Title: ${{ steps.phase_meta.outputs.phase_title }}
-- Slug: ${{ steps.phase_meta.outputs.phase_slug }}
-- Branch: ${{ steps.branch.outputs.branch_name }}
-- Started at: $TS
-- Status: INIT
-- Attempts: 0
-- Notes:
-  - Run created by workflow 02-Phase-Start-Implementation.
-EOF
+          - Phase file: ${{ steps.find_phase.outputs.phase_file }}
+          - Title: ${{ steps.phase_meta.outputs.phase_title }}
+          - Slug: ${{ steps.phase_meta.outputs.phase_slug }}
+          - Branch: ${{ steps.branch.outputs.branch_name }}
+          - Started at: $TS
+          - Status: INIT
+          - Attempts: 0
+          - Notes:
+            - Run created by workflow 02-Phase-Start-Implementation.
+          EOF
 
           echo "Created log file: $LOG_FILE"
 
@@ -186,29 +186,29 @@ EOF
           TITLE="Implement ${PHASE_ID} – ${PHASE_TITLE}"
 
           BODY=$(cat <<EOF
-@copilot
+          @copilot
 
-Please implement **${PHASE_ID} – ${PHASE_TITLE}** according to the phase spec.
+          Please implement **${PHASE_ID} – ${PHASE_TITLE}** according to the phase spec.
 
-Context
+          Context
 
-- Phase file: \`${PHASE_FILE}\`
-- Implementation branch: \`${BRANCH_NAME}\`
-- Run log: \`${LOG_FILE}\`
-- Base branch: \`${{ github.event.inputs.base_branch }}\`
+          - Phase file: \`${PHASE_FILE}\`
+          - Implementation branch: \`${BRANCH_NAME}\`
+          - Run log: \`${LOG_FILE}\`
+          - Base branch: \`${{ github.event.inputs.base_branch }}\`
 
-Tasks
+          Tasks
 
-1. Read the phase spec in \`${PHASE_FILE}\` (including scope, outputs, implementation_prompt).
-2. Implement the phase on branch \`${BRANCH_NAME}\` following \`implementation_prompt\`.
-3. Add/adjust tests so that acceptance_criteria are verified.
-4. Open a Pull Request from \`${BRANCH_NAME}\` to \`${{ github.event.inputs.base_branch }}\`.
+          1. Read the phase spec in \`${PHASE_FILE}\` (including scope, outputs, implementation_prompt).
+          2. Implement the phase on branch \`${BRANCH_NAME}\` following \`implementation_prompt\`.
+          3. Add/adjust tests so that acceptance_criteria are verified.
+          4. Open a Pull Request from \`${BRANCH_NAME}\` to \`${{ github.event.inputs.base_branch }}\`.
 
-After this issue is assigned to you, please:
-- Work only on branch \`${BRANCH_NAME}\`.
-- Update tests and code until the CI workflow passes.
-EOF
-)
+          After this issue is assigned to you, please:
+          - Work only on branch \`${BRANCH_NAME}\`.
+          - Update tests and code until the CI workflow passes.
+          EOF
+          )
 
           echo "==== Issue title ===="
           echo "$TITLE"
