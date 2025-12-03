@@ -66,6 +66,64 @@ class TestAutomationEndpoints:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
+    async def test_enrich_keywords_success(
+        self, async_client: AsyncClient, auth_headers, test_workspace_id
+    ):
+        """Test enrich keywords with existing list returns processing status."""
+        # First create a list using paste
+        response = await async_client.post(
+            "/api/v1/keyword-lists/from-paste",
+            json={
+                "workspace_id": str(test_workspace_id),
+                "name": "To Enrich",
+                "keywords": ["keyword1", "keyword2"],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        list_id = response.json()["list_id"]
+
+        # Now try to enrich - patch the background task to avoid issues
+        with patch("app.api.v1.automation._enrich_keywords_background"):
+            response = await async_client.post(
+                "/api/v1/keyword-lists/enrich",
+                json={"list_id": list_id, "source": "ahrefs"},
+                headers=auth_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["list_id"] == list_id
+        assert data["status"] == "processing"
+
+    @pytest.mark.asyncio
+    async def test_enrich_keywords_semrush(
+        self, async_client: AsyncClient, auth_headers, test_workspace_id
+    ):
+        """Test enrich keywords with SEMrush source."""
+        # First create a list
+        response = await async_client.post(
+            "/api/v1/keyword-lists/from-paste",
+            json={
+                "workspace_id": str(test_workspace_id),
+                "name": "To Enrich SEMrush",
+                "keywords": ["keyword1"],
+            },
+            headers=auth_headers,
+        )
+        list_id = response.json()["list_id"]
+
+        with patch("app.api.v1.automation._enrich_keywords_background"):
+            response = await async_client.post(
+                "/api/v1/keyword-lists/enrich",
+                json={"list_id": list_id, "source": "semrush"},
+                headers=auth_headers,
+            )
+
+        assert response.status_code == 200
+        assert "semrush" in response.json()["message"]
+
+    @pytest.mark.asyncio
     async def test_from_paste_success(
         self, async_client: AsyncClient, auth_headers, test_workspace_id
     ):

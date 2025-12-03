@@ -115,7 +115,7 @@ def enrich_keywords_batch(
             logger.info(f"Enriched {enriched_count} keywords for list {list_id}")
             return {"list_id": list_id, "enriched": enriched_count}
 
-    return asyncio.get_event_loop().run_until_complete(_enrich())
+    return asyncio.run(_enrich())
 
 
 @celery_app.task(bind=True, max_retries=3)
@@ -206,7 +206,7 @@ def discover_trending_keywords(
                 "keywords_added": len(processed),
             }
 
-    return asyncio.get_event_loop().run_until_complete(_discover())
+    return asyncio.run(_discover())
 
 
 @celery_app.task(bind=True, max_retries=3)
@@ -306,7 +306,7 @@ def pull_competitor_keywords(
                 "competitor": competitor_domain,
             }
 
-    return asyncio.get_event_loop().run_until_complete(_pull())
+    return asyncio.run(_pull())
 
 
 @celery_app.task
