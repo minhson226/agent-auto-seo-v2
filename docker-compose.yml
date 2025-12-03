@@ -150,6 +150,112 @@ services:
     networks:
       - autoseo-network
 
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: autoseo-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-autoseo}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_secret}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoseo-network
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: autoseo-api-gateway
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379/0
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8082
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-jwt-secret-change-in-production}
+    ports:
+      - "${API_GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoseo-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: autoseo-auth-service
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-autoseo}:${POSTGRES_PASSWORD:-autoseo_secret}@postgres:5432/${POSTGRES_DB:-autoseo}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379/0
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-autoseo}:${RABBITMQ_PASSWORD:-rabbitmq_secret}@rabbitmq:5672/
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-jwt-secret-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-your-32-byte-encryption-key-here}
+    ports:
+      - "${AUTH_SERVICE_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoseo-network
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: autoseo-notification-service
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-autoseo}:${POSTGRES_PASSWORD:-autoseo_secret}@postgres:5432/${POSTGRES_DB:-autoseo}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-autoseo}:${RABBITMQ_PASSWORD:-rabbitmq_secret}@rabbitmq:5672/
+      - SMTP_HOST=${SMTP_HOST:-smtp.example.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-8082}:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoseo-network
+
 volumes:
   postgres_data:
   redis_data:
@@ -157,6 +263,7 @@ volumes:
   minio_data:
   prometheus_data:
   grafana_data:
+  rabbitmq_data:
 
 networks:
   autoseo-network:
