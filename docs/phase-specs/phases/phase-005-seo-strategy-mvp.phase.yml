@@ -82,14 +82,14 @@ phase:
       metadata JSONB,
       created_at TIMESTAMP DEFAULT NOW()
     );
-    
+
     CREATE TABLE cluster_keywords (
       cluster_id UUID REFERENCES topic_clusters(id),
       keyword_id UUID REFERENCES keywords(id),
       is_primary BOOLEAN DEFAULT FALSE,
       PRIMARY KEY (cluster_id, keyword_id)
     );
-    
+
     CREATE TABLE content_plans (
       id UUID PRIMARY KEY,
       cluster_id UUID REFERENCES topic_clusters(id),

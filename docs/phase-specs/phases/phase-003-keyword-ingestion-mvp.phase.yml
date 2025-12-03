@@ -110,7 +110,7 @@ phase:
        - Pandas cho CSV processing
        - aio-pika cho RabbitMQ
        - boto3/minio-py cho S3/MinIO
-       
+
        Structure:
        ```
        services/keyword-ingestion/
@@ -158,7 +158,7 @@ phase:
          updated_at TIMESTAMP DEFAULT NOW(),
          processed_at TIMESTAMP
        );
-       
+
        CREATE TABLE keywords (
          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
          list_id UUID NOT NULL REFERENCES keyword_lists(id) ON DELETE CASCADE,
@@ -173,7 +173,7 @@ phase:
          updated_at TIMESTAMP DEFAULT NOW(),
          UNIQUE(list_id, normalized_text)
        );
-       
+
        CREATE INDEX idx_keywords_list_id ON keywords(list_id);
        CREATE INDEX idx_keywords_status ON keywords(status);
        CREATE INDEX idx_keywords_normalized_text ON keywords(normalized_text);
@@ -181,7 +181,7 @@ phase:
        ```
 
     3. **API Endpoints**:
-       
+
        **Keyword Lists:**
        - POST /api/v1/keyword-lists
          - Body: multipart/form-data with file
@@ -205,7 +205,7 @@ phase:
              "created_at": "2025-11-23T14:00:00Z"
            }
            ```
-       
+
        - GET /api/v1/keyword-lists?workspace_id=uuid
          - Query: workspace_id (required), status (optional)
          - Response: 200 OK
@@ -225,18 +225,18 @@ phase:
              "page_size": 20
            }
            ```
-       
+
        - GET /api/v1/keyword-lists/{id}
          - Response: 200 OK with full details
-       
+
        - DELETE /api/v1/keyword-lists/{id}
          - Response: 204 No Content
-       
+
        **Keywords:**
        - GET /api/v1/keyword-lists/{list_id}/keywords
          - Query: status, intent, page, page_size
          - Response: paginated keywords
-       
+
        - GET /api/v1/keyword-lists/{list_id}/stats
          - Response: statistics
            ```json
@@ -253,13 +253,13 @@ phase:
            ```
 
     4. **File Processing Logic**:
-       
+
        ```python
        # services/file_parser.py
        class FileParser:
            async def parse_csv(self, file_path: str) -> List[str]:
                """Parse CSV file and extract keywords.
-               
+
                Expected format:
                - Single column: keyword
                - Or multiple columns, take first column
@@ -269,19 +269,19 @@ phase:
                # Detect if first row is header
                # Extract first column
                # Return list of keywords
-               
+
            async def parse_txt(self, file_path: str) -> List[str]:
                """Parse TXT file, one keyword per line."""
                with open(file_path, 'r') as f:
                    keywords = [line.strip() for line in f if line.strip()]
                return keywords
-       
+
        # services/keyword_processor.py
        class KeywordProcessor:
            def normalize(self, keyword: str) -> str:
                """Normalize keyword: lowercase, trim, remove extra spaces."""
                return ' '.join(keyword.lower().strip().split())
-           
+
            def deduplicate(self, keywords: List[str]) -> List[str]:
                """Remove duplicates after normalization."""
                seen = set()
@@ -310,7 +310,7 @@ phase:
 
     6. **Event Publishing**:
        Event: `keyword.list.imported`
-       
+
        ```json
        {
          "event_type": "keyword.list.imported",
@@ -340,7 +340,7 @@ phase:
        Option 1: Celery + Redis
        Option 2: FastAPI BackgroundTasks (simple)
        Option 3: Separate worker service
-       
+
        Recommendation: FastAPI BackgroundTasks cho MVP, migrate to Celery nếu cần scale
 
     9. **Testing**:

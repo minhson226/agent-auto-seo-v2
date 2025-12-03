@@ -73,14 +73,14 @@ phase:
     2. **Content Generator**:
     ```python
     from openai import AsyncOpenAI
-    
+
     class ContentGenerator:
         def __init__(self):
             self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        
+
         async def generate_article(self, content_plan):
             prompt = self._build_prompt(content_plan)
-            
+
             response = await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -90,23 +90,23 @@ phase:
                 temperature=0.7,
                 max_tokens=2000
             )
-            
+
             content = response.choices[0].message.content
             cost = self._calculate_cost(response.usage)
-            
+
             return {
                 'content': content,
                 'cost': cost,
                 'model': 'gpt-3.5-turbo'
             }
-        
+
         def _build_prompt(self, content_plan):
             return f"""
             Write a comprehensive SEO article about: {content_plan.title}
-            
+
             Target keywords: {', '.join(content_plan.target_keywords)}
             Estimated word count: {content_plan.estimated_word_count}
-            
+
             Requirements:
             - Include H1 title with main keyword
             - Include H2 and H3 subheadings

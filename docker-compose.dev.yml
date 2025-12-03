@@ -1,0 +1,42 @@
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: autoseo_dev
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: autoseo_dev
+
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass dev_password
+
+  clickhouse:
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_USER: autoseo_dev
+      CLICKHOUSE_PASSWORD: dev_password
+
+  minio:
+    ports:
+      - "9002:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
+  prometheus:
+    ports:
+      - "9090:9090"
+
+  grafana:
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin

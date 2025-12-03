@@ -88,7 +88,7 @@ phase:
     YÊU CẦU TRIỂN KHAI:
 
     1. **API Connectors**:
-       
+
        A. Ahrefs API Connector:
        ```python
        # connectors/ahrefs_connector.py
@@ -96,52 +96,52 @@ phase:
            async def get_keyword_metrics(self, keyword: str):
                # GET /keywords-explorer/keyword-metrics
                # Returns: search_volume, keyword_difficulty, cpc, clicks
-           
+
            async def get_related_keywords(self, keyword: str, limit=50):
                # GET /keywords-explorer/related-terms
-           
+
            async def get_competitor_keywords(self, domain: str, limit=100):
                # GET /site-explorer/top-pages
        ```
-       
+
        B. SEMrush API Connector:
        ```python
        # connectors/semrush_connector.py
        class SEMrushConnector:
            async def get_keyword_overview(self, keyword: str, database='us'):
                # Phrase Report
-           
+
            async def get_related_keywords(self, keyword: str):
                # Related Keywords Report
        ```
-       
+
        C. Google Trends Connector:
        ```python
        # connectors/google_trends_connector.py
        from pytrends.request import TrendReq
-       
+
        class GoogleTrendsConnector:
            async def get_trending_searches(self, geo='US'):
                # Daily trending searches
-           
+
            async def get_interest_over_time(self, keyword: str):
                # Interest over time for keyword
        ```
 
     2. **Intent Classification với NLP**:
-       
+
        Model: DistilBERT fine-tuned for intent classification
-       
+
        Classes:
        - informational (e.g., "how to ...", "what is ...")
        - commercial (e.g., "best ...", "review ...")
        - navigational (e.g., brand names, specific sites)
        - transactional (e.g., "buy ...", "discount ...")
-       
+
        ```python
        # ml/intent_classifier.py
        from transformers import AutoTokenizer, AutoModelForSequenceClassification
-       
+
        class IntentClassifier:
            def __init__(self):
                self.model_name = "distilbert-base-uncased"
@@ -150,7 +150,7 @@ phase:
                self.model = AutoModelForSequenceClassification.from_pretrained(
                    self.model_name, num_labels=4
                )
-           
+
            async def classify(self, keyword: str) -> Dict[str, float]:
                """Returns probabilities for each intent class."""
                inputs = self.tokenizer(keyword, return_tensors="pt", padding=True)
@@ -162,21 +162,21 @@ phase:
                    'navigational': probs[0][2].item(),
                    'transactional': probs[0][3].item()
                }
-           
+
            def get_primary_intent(self, keyword: str) -> str:
                """Returns the primary intent class."""
                probs = self.classify(keyword)
                return max(probs, key=probs.get)
        ```
-       
+
        Alternative: Use zero-shot classification với model như BART
-       
+
        ```python
        from transformers import pipeline
-       
-       classifier = pipeline("zero-shot-classification", 
+
+       classifier = pipeline("zero-shot-classification",
                            model="facebook/bart-large-mnli")
-       
+
        result = classifier(
            keyword,
            candidate_labels=["informational", "commercial", "navigational", "transactional"]
@@ -184,25 +184,25 @@ phase:
        ```
 
     3. **Background Jobs với Celery**:
-       
+
        ```python
        # tasks/keyword_tasks.py
        from celery import Celery
-       
+
        celery_app = Celery('keyword_tasks', broker='redis://localhost:6379')
-       
+
        @celery_app.task
        async def enrich_keywords_batch(list_id: str):
            """Enrich keywords với data từ Ahrefs/SEMrush."""
            keywords = await get_keywords_by_list(list_id)
-           
+
            for kw in keywords:
                # Get metrics from Ahrefs
                metrics = await ahrefs.get_keyword_metrics(kw.text)
-               
+
                # Classify intent
                intent = await intent_classifier.get_primary_intent(kw.text)
-               
+
                # Update keyword
                await update_keyword(kw.id, {
                    'search_volume': metrics['search_volume'],
@@ -210,46 +210,46 @@ phase:
                    'intent': intent,
                    'status': 'processed'
                })
-           
+
            # Publish event
            await publish_event('keyword.list.enriched', {'list_id': list_id})
-       
+
        @celery_app.task
        async def discover_trending_keywords(workspace_id: str):
            """Daily job to discover trending keywords from Google Trends."""
            trends = await google_trends.get_trending_searches()
-           
+
            # Create new keyword list
            list_id = await create_keyword_list(
                workspace_id=workspace_id,
                name=f"Trending Keywords {date.today()}",
                source='google_trends'
            )
-           
+
            # Add keywords
            for trend in trends:
                await add_keyword(list_id, trend)
-           
+
            # Trigger enrichment
            enrich_keywords_batch.delay(list_id)
-       
+
        @celery_app.task
        async def pull_competitor_keywords(workspace_id: str, competitor_domain: str):
            """Pull keywords from competitor."""
            keywords = await ahrefs.get_competitor_keywords(competitor_domain)
-           
+
            list_id = await create_keyword_list(
                workspace_id=workspace_id,
                name=f"Competitor: {competitor_domain}",
                source='ahrefs_competitor'
            )
-           
+
            for kw in keywords:
                await add_keyword(list_id, kw['keyword'])
        ```
 
     4. **Database Schema Updates**:
-       
+
        ```sql
        -- Add columns to keywords table
        ALTER TABLE keywords
@@ -258,7 +258,7 @@ phase:
        ADD COLUMN intent_confidence DECIMAL(5,2),
        ADD COLUMN trend_score INTEGER,
        ADD COLUMN last_enriched_at TIMESTAMP;
-       
+
        -- Create table for scheduled jobs
        CREATE TABLE keyword_sync_jobs (
          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -274,7 +274,7 @@ phase:
        ```
 
     5. **New API Endpoints**:
-       
+
        - POST /api/v1/keyword-lists/enrich
          ```json
          {
@@ -282,7 +282,7 @@ phase:
            "source": "ahrefs" // or "semrush"
          }
          ```
-       
+
        - POST /api/v1/keyword-lists/from-trends
          ```json
          {
@@ -291,7 +291,7 @@ phase:
            "category": "all"
          }
          ```
-       
+
        - POST /api/v1/keyword-lists/from-competitor
          ```json
          {
@@ -300,7 +300,7 @@ phase:
            "limit": 100
          }
          ```
-       
+
        - POST /api/v1/keyword-lists/from-paste
          ```json
          {
@@ -309,7 +309,7 @@ phase:
            "keywords": ["keyword 1", "keyword 2", ...]
          }
          ```
-       
+
        - POST /api/v1/keywords/classify-intent
          ```json
          {

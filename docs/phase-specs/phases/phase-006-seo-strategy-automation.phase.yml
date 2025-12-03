@@ -68,7 +68,7 @@ phase:
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.cluster import KMeans
     from sentence_transformers import SentenceTransformer
-    
+
     class KeywordClusterer:
         def cluster_tfidf(self, keywords: List[str], n_clusters=5):
             vectorizer = TfidfVectorizer()
@@ -76,7 +76,7 @@ phase:
             kmeans = KMeans(n_clusters=n_clusters)
             labels = kmeans.fit_predict(X)
             return labels
-        
+
         def cluster_semantic(self, keywords: List[str], threshold=0.7):
             model = SentenceTransformer('all-MiniLM-L6-v2')
             embeddings = model.encode(keywords)
@@ -92,17 +92,17 @@ phase:
     # services/serp-analyzer/scraper.py
     import httpx
     from bs4 import BeautifulSoup
-    
+
     class SERPScraper:
         async def get_top_results(self, keyword: str, num_results=10):
             # Use Google Custom Search API hoặc ScraperAPI
             results = await self._scrape_google(keyword)
             return results[:num_results]
-        
+
         async def analyze_content(self, url: str):
             html = await self._fetch(url)
             soup = BeautifulSoup(html, 'html.parser')
-            
+
             return {
                 'word_count': self._count_words(soup),
                 'h1': soup.find('h1').text if soup.find('h1') else None,
@@ -118,15 +118,15 @@ phase:
     ```python
     # ml/predictor.py
     import xgboost as xgb
-    
+
     class RankingPredictor:
         def __init__(self):
             self.model = xgb.XGBClassifier()
-        
+
         def train(self, features, labels):
             # Features: keyword_difficulty, search_volume, content_quality_score, etc.
             self.model.fit(features, labels)
-        
+
         def predict_ranking_probability(self, features):
             # Predict probability of ranking in top 10
             return self.model.predict_proba(features)[:, 1]

@@ -126,7 +126,7 @@ phase:
        - Request logging và tracing
        - CORS handling
        - Health check endpoints
-       
+
        Endpoints:
        - GET /health
        - POST /api/v1/auth/* -> Auth Service
@@ -149,7 +149,7 @@ phase:
        - Workspace CRUD (multi-tenant)
        - Site CRUD (WordPress integration config)
        - API Keys management (encrypted storage)
-       
+
        Database Schema:
        ```sql
        users (
@@ -161,7 +161,7 @@ phase:
          created_at TIMESTAMP,
          updated_at TIMESTAMP
        )
-       
+
        workspaces (
          id UUID PRIMARY KEY,
          name VARCHAR NOT NULL,
@@ -170,14 +170,14 @@ phase:
          created_at TIMESTAMP,
          updated_at TIMESTAMP
        )
-       
+
        workspace_members (
          workspace_id UUID REFERENCES workspaces(id),
          user_id UUID REFERENCES users(id),
          role VARCHAR,
          PRIMARY KEY (workspace_id, user_id)
        )
-       
+
        sites (
          id UUID PRIMARY KEY,
          workspace_id UUID REFERENCES workspaces(id),
@@ -190,7 +190,7 @@ phase:
          created_at TIMESTAMP,
          updated_at TIMESTAMP
        )
-       
+
        api_keys (
          id UUID PRIMARY KEY,
          workspace_id UUID REFERENCES workspaces(id),
@@ -200,7 +200,7 @@ phase:
          created_at TIMESTAMP
        )
        ```
-       
+
        Endpoints:
        - POST /auth/register
        - POST /auth/login (returns JWT)
@@ -209,7 +209,7 @@ phase:
        - CRUD /workspaces
        - CRUD /workspaces/:id/sites
        - CRUD /workspaces/:id/api-keys
-       
+
        Security:
        - Password hashing với bcrypt
        - JWT với RS256
@@ -228,13 +228,13 @@ phase:
        - Gửi email notifications (SendGrid, AWS SES, hoặc SMTP)
        - Gửi Slack notifications (webhooks)
        - In-app notifications (lưu vào database, UI sẽ query)
-       
+
        Events to listen:
        - article.published
        - job.failed
        - workspace.created
        - user.registered
-       
+
        Database Schema:
        ```sql
        notifications (
@@ -250,7 +250,7 @@ phase:
          sent_at TIMESTAMP
        )
        ```
-       
+
        Features:
        - Email templates (HTML)
        - Retry mechanism khi gửi failed
@@ -261,10 +261,10 @@ phase:
        - RabbitMQ deployment trong K8s (StatefulSet)
        - Management UI enabled
        - Persistence enabled
-       
+
        Exchanges:
        - `auto_seo.events` (topic exchange)
-       
+
        Message Format:
        ```json
        {
@@ -282,11 +282,11 @@ phase:
          }
        }
        ```
-       
+
        Event Schema Documentation:
        - Tạo file docs/events/event-schemas.md
        - Document tất cả event types
-       
+
        Common Events (cho phase này):
        - user.registered
        - workspace.created

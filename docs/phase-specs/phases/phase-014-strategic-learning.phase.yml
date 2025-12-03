@@ -64,12 +64,12 @@ phase:
     ```python
     from google.analytics.data_v1beta import BetaAnalyticsDataClient
     from google.analytics.data_v1beta.types import RunReportRequest
-    
+
     class GA4Connector:
         def __init__(self, property_id: str):
             self.client = BetaAnalyticsDataClient()
             self.property_id = property_id
-        
+
         async def get_page_metrics(self, start_date: str, end_date: str):
             request = RunReportRequest(
                 property=f"properties/{self.property_id}",
@@ -84,7 +84,7 @@ phase:
                     "end_date": end_date
                 }]
             )
-            
+
             response = self.client.run_report(request)
             return self._parse_response(response)
     ```
@@ -92,13 +92,13 @@ phase:
     2. **Google Search Console Connector**:
     ```python
     from googleapiclient.discovery import build
-    
+
     class GSCConnector:
         def __init__(self, site_url: str):
-            self.service = build('searchconsole', 'v1', 
+            self.service = build('searchconsole', 'v1',
                                credentials=self.get_credentials())
             self.site_url = site_url
-        
+
         async def get_performance_data(self, start_date: str, end_date: str):
             request = {
                 'startDate': start_date,
@@ -106,12 +106,12 @@ phase:
                 'dimensions': ['page', 'query'],
                 'rowLimit': 25000
             }
-            
+
             response = self.service.searchanalytics().query(
                 siteUrl=self.site_url,
                 body=request
             ).execute()
-            
+
             return response.get('rows', [])
     ```
 
@@ -121,10 +121,10 @@ phase:
     async def sync_analytics_daily():
         """Daily job to sync GA and GSC data."""
         workspaces = await get_active_workspaces()
-        
+
         for ws in workspaces:
             sites = await get_sites(ws.id)
-            
+
             for site in sites:
                 # Sync GA4
                 ga4 = GA4Connector(site.ga_property_id)
@@ -132,17 +132,17 @@ phase:
                     start_date=(datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
                     end_date=datetime.now().strftime('%Y-%m-%d')
                 )
-                
+
                 # Sync GSC
                 gsc = GSCConnector(site.url)
                 gsc_data = await gsc.get_performance_data(
                     start_date=(datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
                     end_date=datetime.now().strftime('%Y-%m-%d')
                 )
-                
+
                 # Insert into ClickHouse
                 await insert_performance_data(ga_data, gsc_data)
-                
+
                 # Update PostgreSQL summary
                 await update_article_performance_sync(ws.id)
     ```
@@ -163,16 +163,16 @@ phase:
               AND date >= today() - 30
             GROUP BY ai_model_used
             """
-            
+
             results = await clickhouse_client.execute(query, {
                 'workspace_id': workspace_id
             })
-            
+
             # Example output:
             # GPT-4o: avg_position=8.5, avg_cost=0.05
             # GPT-3.5: avg_position=12.3, avg_cost=0.01
             # => GPT-4o performs 30% better despite 5x cost
-            
+
             return results
     ```
 
@@ -195,11 +195,11 @@ phase:
             GROUP BY c.id, c.name
             HAVING avg_position > 20 OR total_clicks < 10
             """
-            
+
             issues = await clickhouse_client.execute(query, {
                 'workspace_id': workspace_id
             })
-            
+
             for issue in issues:
                 await send_alert(workspace_id, {
                     'type': 'low_performance',
@@ -216,18 +216,18 @@ phase:
             """
             Phát hiện: Cluster 'XYZ' (dùng Prompt_A, Model_Gemini1.0)
             đã 30 ngày không rank.
-            
+
             Hành động: Tự động tạo ContentPlan mới với chiến lược mới.
             """
             cluster = await get_cluster(cluster_id)
             performance = await get_cluster_performance(cluster_id, days=30)
-            
+
             if performance['avg_position'] > 20:
                 # Poor performance detected
-                
+
                 # Analyze what's working for competitors
                 best_practices = await analyze_competitors(cluster)
-                
+
                 # Generate new content plan with different strategy
                 new_plan = await create_content_plan({
                     'cluster_id': cluster_id,
@@ -237,7 +237,7 @@ phase:
                     'ai_model': 'gpt-4o',  # Upgrade to better model
                     'prompt_template': 'detailed_v2'  # Different prompt
                 })
-                
+
                 # Emit event
                 await publish_event('content.plan.regenerate', {
                     'cluster_id': cluster_id,
@@ -252,7 +252,7 @@ phase:
     async def weekly_strategy_evaluation():
         """Weekly job to re-evaluate underperforming clusters."""
         workspaces = await get_active_workspaces()
-        
+
         for ws in workspaces:
             await strategy_evaluator.evaluate_workspace(ws.id)
     ```

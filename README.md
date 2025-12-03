@@ -1,59 +1,163 @@
-# Project Auto Architect – Part 1 (Phase Planner)
+# Auto-SEO Platform
 
-This repository is a **Part 1 / Phase Planner** for an automated project workflow:
-from a single PDF master specification, it produces a set of **phase specs** and
-per-phase **implementation prompts** that can later be consumed by a GitHub Agent
-(Copilot / custom agent) to implement each phase.
+A comprehensive **Content & SEO Automation Platform** built with microservices architecture. The platform enables automated keyword research, content generation, SEO optimization, publishing, and performance analytics.
 
-## Overview
+[![CI/CD Pipeline](https://github.com/your-org/auto-seo/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/your-org/auto-seo/actions/workflows/ci-cd.yml)
 
-Flow for Part 1:
+## 🚀 Quick Start
 
-1. Put your main project spec PDF at:
-   `docs/master-specs/project-master-spec.pdf`
-2. Run the GitHub Action:
-   `01 - Architecture: Split master spec into phases`.
-3. The workflow will:
-   - Extract the text from the PDF into `docs/phase-specs/master-spec.txt`.
-   - (Optional / to be customized) Invoke a GitHub Agent that uses
-     `.github/agents/architecture-planner.agent.md` to:
-       - Read the extracted text.
-       - Split it into multiple phases.
-       - Generate YAML phase files in `docs/phase-specs/phases/`.
-       - Generate `PLAN_OVERVIEW.md` and `VALIDATION_REPORT.md`.
+### Prerequisites
 
-After Part 1, you will have:
+- Docker (v20.10+)
+- Docker Compose (v2.0+)
+- Git
 
-- A clear list of phases in `docs/phase-specs/PLAN_OVERVIEW.md`.
-- One `.phase.yml` file per phase in `docs/phase-specs/phases/`.
-- A validation report of the phases in `docs/phase-specs/VALIDATION_REPORT.md`.
+### Local Development Setup
 
-## Requirements
+```bash
+# Clone the repository
+git clone https://github.com/your-org/auto-seo.git
+cd auto-seo
 
-- GitHub Actions enabled for the repository.
-- Python 3.12+ (for the workflow runner) with `pypdf` installed.
-- A mechanism to run a GitHub Agent (Copilot / GitHub Agents) that can read
-  `.github/agents/architecture-planner.agent.md` and modify files in the repo.
+# Copy environment variables
+cp .env.example .env
 
-The workflow file includes a placeholder step where you should plug in
-your own GitHub Agent invocation command (CLI, `gh` extension, etc.).
+# Start all services
+docker-compose up -d
 
-## Usage
+# Verify services are running
+docker-compose ps
+```
 
-1. Copy this entire folder as a new Git repository or merge into your existing repo.
-2. Commit and push to GitHub.
-3. Upload your real project master specification PDF to:
-   `docs/master-specs/project-master-spec.pdf`.
-4. Go to **Actions** → `01 - Architecture: Split master spec into phases` →
-   **Run workflow**, adjust inputs if needed.
-5. Once the workflow finishes:
-   - Check `docs/phase-specs/master-spec.txt` to see the extracted spec.
-   - Use or customize the GitHub Agent step to actually generate the phases.
-   - Inspect `docs/phase-specs/PLAN_OVERVIEW.md` and the `.phase.yml` files.
+### Access Services
 
-## Notes
+| Service | URL | Default Credentials |
+|---------|-----|---------------------|
+| PostgreSQL | localhost:5432 | autoseo / autoseo_secret |
+| Redis | localhost:6379 | redis_secret |
+| ClickHouse | localhost:8123 | autoseo / clickhouse_secret |
+| MinIO Console | http://localhost:9001 | minioadmin / minioadmin_secret |
+| Grafana | http://localhost:3000 | admin / grafana_secret |
+| Prometheus | http://localhost:9090 | - |
 
-- This repo focuses only on **Part 1 – Phase Planning**.
-- Part 2 (Phase Executor) can iterate over the generated phase specs and
-  dispatch coding tasks to another GitHub Agent using the `implementation_prompt`
-  inside each phase file.
+## 📁 Project Structure
+
+```
+auto-seo/
+├── services/                 # Microservices
+│   ├── api-gateway/         # API Gateway service
+│   ├── auth-service/        # Authentication service
+│   └── notification-service/ # Notification service
+├── infrastructure/          # Infrastructure configurations
+│   ├── postgres/            # PostgreSQL configs
+│   ├── redis/               # Redis configs
+│   ├── clickhouse/          # ClickHouse configs
+│   ├── minio/               # MinIO configs
+│   └── monitoring/          # Prometheus & Grafana configs
+├── k8s/                     # Kubernetes manifests
+│   ├── namespaces/          # Namespace definitions
+│   ├── databases/           # Database deployments
+│   ├── monitoring/          # Monitoring stack
+│   ├── configmaps/          # ConfigMaps
+│   └── secrets/             # Secrets (dev only)
+├── migrations/              # Database migrations
+├── docs/                    # Documentation
+│   ├── setup/               # Setup guides
+│   ├── architecture/        # Architecture docs
+│   └── deployment/          # Deployment guides
+├── docker-compose.yml       # Local development
+└── docker-compose.dev.yml   # Development overrides
+```
+
+## 🏗️ Architecture
+
+Auto-SEO uses a microservices architecture with event-driven communication:
+
+- **API Gateway**: Request routing, rate limiting, authentication
+- **Core Services**: Auth, Workspace Management, Notifications
+- **Domain Services**: Keyword Ingestion, SEO Strategy, Content Generation, Publishing, Analytics
+- **Data Layer**: PostgreSQL, Redis, ClickHouse, MinIO
+
+See [Architecture Overview](docs/architecture/overview.md) for detailed documentation.
+
+## 🛠️ Technology Stack
+
+| Category | Technologies |
+|----------|-------------|
+| Backend | Python 3.11+, FastAPI, Node.js, Go |
+| Databases | PostgreSQL 15+, Redis 7+, ClickHouse |
+| Storage | MinIO (S3-compatible) |
+| Container | Docker, Kubernetes |
+| CI/CD | GitHub Actions |
+| Monitoring | Prometheus, Grafana |
+
+## 📖 Documentation
+
+- [Local Development Setup](docs/setup/local-development.md)
+- [Architecture Overview](docs/architecture/overview.md)
+- [Kubernetes Deployment](docs/deployment/kubernetes.md)
+- [Phase Specifications](docs/phase-specs/PLAN_OVERVIEW.md)
+
+## 🧪 Testing
+
+```bash
+# Run infrastructure tests
+docker-compose up -d postgres redis
+docker-compose exec postgres pg_isready -U autoseo
+docker-compose exec redis redis-cli -a redis_secret ping
+```
+
+## 🚢 Deployment
+
+### Kubernetes
+
+```bash
+# Create namespaces
+kubectl apply -f k8s/namespaces/
+
+# Deploy databases
+kubectl apply -f k8s/configmaps/
+kubectl apply -f k8s/secrets/
+kubectl apply -f k8s/databases/
+
+# Deploy monitoring
+kubectl apply -f k8s/monitoring/
+```
+
+See [Kubernetes Deployment Guide](docs/deployment/kubernetes.md) for detailed instructions.
+
+## 📊 Monitoring
+
+- **Prometheus**: Metrics collection and alerting
+- **Grafana**: Visualization and dashboards
+- **Health Checks**: All services include health endpoints
+
+## 🔒 Security
+
+- JWT-based authentication
+- Role-based access control (RBAC)
+- Secrets managed via Kubernetes Secrets
+- Encryption at rest and in transit
+
+## 🤝 Contributing
+
+1. Read the phase specifications in `docs/phase-specs/`
+2. Follow the implementation prompts in each phase YAML file
+3. Ensure tests pass before submitting PR
+4. Update documentation as needed
+
+## 📄 License
+
+This project is proprietary. All rights reserved.
+
+---
+
+## Phase Planning (Legacy)
+
+This repository also includes the Phase Planner tooling:
+
+- **Phase Specs**: `docs/phase-specs/phases/`
+- **Plan Overview**: `docs/phase-specs/PLAN_OVERVIEW.md`
+- **Validation Report**: `docs/phase-specs/VALIDATION_REPORT.md`
+
+The Phase Planner extracts implementation phases from master specifications and generates implementation prompts for automated development.

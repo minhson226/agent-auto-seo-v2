@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: autoseo-dev
+  labels:
+    app: postgres
+    app.kubernetes.io/part-of: autoseo
+data:
+  POSTGRES_DB: autoseo
+  POSTGRES_USER: autoseo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: autoseo-dev
+  labels:
+    app: redis
+    app.kubernetes.io/part-of: autoseo
+data:
+  redis.conf: |
+    maxmemory 256mb
+    maxmemory-policy allkeys-lru
+    appendonly yes
+    appendfsync everysec
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+  namespace: autoseo-dev
+  labels:
+    app: clickhouse
+    app.kubernetes.io/part-of: autoseo
+data:
+  CLICKHOUSE_DB: autoseo_analytics
+  CLICKHOUSE_USER: autoseo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-config
+  namespace: autoseo-dev
+  labels:
+    app: minio
+    app.kubernetes.io/part-of: autoseo
+data:
+  MINIO_BROWSER: "on"
+  MINIO_REGION: us-east-1

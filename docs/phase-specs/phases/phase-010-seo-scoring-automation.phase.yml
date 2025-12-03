@@ -52,11 +52,11 @@ phase:
     1. **Auto HTML Analyzer**:
     ```python
     from bs4 import BeautifulSoup
-    
+
     class HTMLAnalyzer:
         def analyze(self, html_content: str, target_keywords: List[str]):
             soup = BeautifulSoup(html_content, 'html.parser')
-            
+
             return {
                 'title_contains_keyword': self._check_title(soup, target_keywords),
                 'h1_present': bool(soup.find('h1')),
@@ -75,16 +75,16 @@ phase:
         def score(self, analysis: dict, weights: dict = None):
             if weights is None:
                 weights = self.default_weights
-            
+
             score = 0
             max_score = 0
-            
+
             for item, value in analysis.items():
                 if item in weights:
                     max_score += weights[item]
                     if value:
                         score += weights[item]
-            
+
             return int(score / max_score * 100)
     ```
 
@@ -94,15 +94,15 @@ phase:
         async def correct(self, article_id: str, score_data: dict):
             if score_data['score'] < 80:
                 issues = self._identify_issues(score_data)
-                
+
                 for issue in issues:
                     if issue == 'missing_keyword_in_h2':
-                        await self._regenerate_with_fix(article_id, 
+                        await self._regenerate_with_fix(article_id,
                             "Add main keyword to H2 headings")
                     elif issue == 'low_word_count':
                         await self._regenerate_with_fix(article_id,
                             "Expand content to 1500+ words")
-                
+
                 # Emit event to re-generate
                 await publish_event('article.generate.request', {
                     'article_id': article_id,
@@ -116,19 +116,19 @@ phase:
         async def adjust_weights(self, workspace_id: str):
             # Get articles + their ranking performance from Module 6
             articles = await get_articles_with_performance(workspace_id)
-            
+
             # ML model to learn which factors correlate with good rankings
             X = []  # SEO scores
             y = []  # Ranking performance
-            
+
             for article in articles:
                 X.append(article.seo_checklist_values)
                 y.append(article.avg_position < 10)
-            
+
             # Train model to find optimal weights
             model = LogisticRegression()
             model.fit(X, y)
-            
+
             # Update weights in database
             new_weights = model.coef_
             await update_workspace_weights(workspace_id, new_weights)

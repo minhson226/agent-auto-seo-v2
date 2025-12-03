@@ -135,12 +135,12 @@ phase:
     ```typescript
     // api/client.ts
     import axios from 'axios';
-    
+
     const apiClient = axios.create({
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
       timeout: 30000,
     });
-    
+
     // Add JWT interceptor
     apiClient.interceptors.request.use((config) => {
       const token = localStorage.getItem('jwt_token');
@@ -149,7 +149,7 @@ phase:
       }
       return config;
     });
-    
+
     export default apiClient;
     ```
 
@@ -160,7 +160,7 @@ phase:
     // hooks/useAuth.ts
     import { useQuery, useMutation } from '@tanstack/react-query';
     import * as authAPI from '../api/auth';
-    
+
     export function useAuth() {
       const login = useMutation({
         mutationFn: authAPI.login,
@@ -168,12 +168,12 @@ phase:
           localStorage.setItem('jwt_token', data.token);
         }
       });
-      
+
       const me = useQuery({
         queryKey: ['me'],
         queryFn: authAPI.getMe,
       });
-      
+
       return { login, me };
     }
     ```
@@ -189,14 +189,14 @@ phase:
           queryClient.invalidateQueries(['keyword-lists']);
         }
       });
-      
+
       const handleSubmit = () => {
         const formData = new FormData();
         formData.append('file', file!);
         formData.append('name', 'My Keywords');
         uploadMutation.mutate(formData);
       };
-      
+
       return (
         <div>
           <input type="file" accept=".csv,.txt" onChange={...} />
@@ -210,16 +210,16 @@ phase:
     ```typescript
     // components/clustering/DragDropClustering.tsx
     import { DndProvider, useDrag, useDrop } from 'react-dnd';
-    
+
     function ClusteringBoard() {
       const [clusters, setClusters] = useState([]);
       const [keywords, setKeywords] = useState([]);
-      
+
       const handleDrop = (keywordId: string, clusterId: string) => {
         // Call API to add keyword to cluster
         clustersAPI.addKeyword(clusterId, keywordId);
       };
-      
+
       return (
         <DndProvider backend={HTML5Backend}>
           <div className="flex gap-4">
@@ -235,13 +235,13 @@ phase:
     ```typescript
     // components/analytics/PerformanceChart.tsx
     import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-    
+
     function PerformanceChart({ articleId }: { articleId: string }) {
       const { data } = useQuery({
         queryKey: ['article-performance', articleId],
         queryFn: () => analyticsAPI.getArticlePerformance(articleId)
       });
-      
+
       return (
         <LineChart width={800} height={400} data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -259,7 +259,7 @@ phase:
     ```typescript
     // App.tsx
     import { BrowserRouter, Routes, Route } from 'react-router-dom';
-    
+
     function App() {
       return (
         <BrowserRouter>

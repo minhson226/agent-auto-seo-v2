@@ -68,7 +68,7 @@ phase:
                 'google': GoogleProvider(),
                 'xai': XAIProvider()  # Grok
             }
-        
+
         async def generate(self, prompt, provider='openai', model=None):
             return await self.providers[provider].generate(prompt, model)
     ```
@@ -89,17 +89,17 @@ phase:
     ```python
     from langchain.vectorstores import PGVector
     from langchain.embeddings import OpenAIEmbeddings
-    
+
     class RAGEngine:
         async def enrich_context(self, query: str):
             # Query SERP data from Module 2
             serp_data = await self.get_serp_data(query)
-            
+
             # Embed and store in pgvector
             embeddings = OpenAIEmbeddings()
             docs = [...]
             vectorstore = PGVector.from_documents(docs, embeddings)
-            
+
             # Retrieve relevant context
             context = vectorstore.similarity_search(query, k=5)
             return context
@@ -112,7 +112,7 @@ phase:
         plans = await get_pending_content_plans()
         for plan in plans:
             await generate_article.delay(plan.id)
-    
+
     @celery_app.task
     async def smart_schedule_optimizer(workspace_id):
         # Analyze traffic patterns from Module 6
@@ -126,7 +126,7 @@ phase:
         async def get_free_images(self, query: str):
             # Pexels, Unsplash API
             pass
-        
+
         async def generate_ai_image(self, prompt: str):
             # DALL-E 3
             response = await openai.images.generate(

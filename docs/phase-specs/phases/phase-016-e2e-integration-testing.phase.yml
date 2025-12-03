@@ -86,58 +86,58 @@ phase:
     ```typescript
     // tests/e2e/content-creation-flow.spec.ts
     import { test, expect } from '@playwright/test';
-    
+
     test('Complete content creation workflow', async ({ page }) => {
       // 1. Login
       await page.goto('/login');
       await page.fill('[name=email]', 'test@example.com');
       await page.fill('[name=password]', 'password');
       await page.click('button[type=submit]');
-      
+
       // 2. Create workspace
       await page.goto('/workspaces/new');
       await page.fill('[name=name]', 'Test Workspace');
       await page.click('button:has-text("Create")');
-      
+
       // 3. Add site
       await page.goto('/sites/new');
       await page.fill('[name=url]', 'https://example.com');
       await page.fill('[name=wp_username]', 'admin');
       await page.fill('[name=wp_password]', 'password');
       await page.click('button:has-text("Add Site")');
-      
+
       // 4. Upload keywords
       await page.goto('/keywords');
       await page.setInputFiles('input[type=file]', 'fixtures/keywords.csv');
       await page.click('button:has-text("Upload")');
       await expect(page.locator('.success-message')).toBeVisible();
-      
+
       // 5. Create cluster
       await page.goto('/clustering');
       await page.click('button:has-text("New Cluster")');
       await page.fill('[name=name]', 'Test Cluster');
       // Drag keywords into cluster
       // ...
-      
+
       // 6. Create content plan
       await page.goto('/content-plans/new');
       await page.selectOption('[name=cluster_id]', 'Test Cluster');
       await page.fill('[name=title]', 'Test Article Title');
       await page.selectOption('[name=priority]', 'high');
       await page.click('button:has-text("Create Plan")');
-      
+
       // 7. Generate article
       await page.click('button:has-text("Generate Article")');
       await page.waitForSelector('.article-generated', { timeout: 60000 });
-      
+
       // 8. Review SEO score
       const score = await page.textContent('.seo-score');
       expect(parseInt(score!)).toBeGreaterThan(80);
-      
+
       // 9. Publish
       await page.click('button:has-text("Publish to WordPress")');
       await expect(page.locator('.publish-success')).toBeVisible();
-      
+
       // 10. Verify in analytics
       await page.goto('/analytics');
       await expect(page.locator('.published-articles')).toContainText('1');
@@ -149,38 +149,38 @@ phase:
     # tests/integration/test_event_flow.py
     import pytest
     from services.event_bus import EventBus
-    
+
     @pytest.mark.asyncio
     async def test_keyword_to_content_flow():
         """Test complete flow from keyword import to content generation."""
-        
+
         # 1. Import keywords -> event: keyword.list.imported
         list_id = await import_keywords('fixtures/keywords.csv')
-        
+
         # Wait for event
         event = await wait_for_event('keyword.list.imported', timeout=10)
         assert event['payload']['list_id'] == list_id
-        
+
         # 2. Create cluster -> event: cluster.created
         cluster_id = await create_cluster('Test Cluster', keywords=...)
-        
+
         # 3. Create content plan -> event: content.plan.created
         plan_id = await create_content_plan(cluster_id)
         event = await wait_for_event('content.plan.created', timeout=10)
         assert event['payload']['plan_id'] == plan_id
-        
+
         # 4. Generate article -> event: article.generated
         article_id = await generate_article(plan_id)
         event = await wait_for_event('article.generated', timeout=60)
         assert event['payload']['article_id'] == article_id
-        
+
         # 5. Score article -> event: article.approved_for_publishing or article.generate.request
         score = await score_article(article_id)
         if score >= 80:
             event = await wait_for_event('article.approved_for_publishing', timeout=10)
         else:
             event = await wait_for_event('article.generate.request', timeout=10)
-        
+
         # 6. Publish -> event: article.published
         if score >= 80:
             await publish_article(article_id)
@@ -189,15 +189,15 @@ phase:
     ```
 
     2. **Performance Testing**:
-    
+
     A. **Load Testing avec Locust**:
     ```python
     # tests/performance/locustfile.py
     from locust import HttpUser, task, between
-    
+
     class AutoSEOUser(HttpUser):
         wait_time = between(1, 3)
-        
+
         def on_start(self):
             # Login
             response = self.client.post("/api/v1/auth/login", json={
@@ -206,22 +206,22 @@ phase:
             })
             self.token = response.json()['token']
             self.client.headers['Authorization'] = f"Bearer {self.token}"
-        
+
         @task(3)
         def get_keywords(self):
             self.client.get("/api/v1/keyword-lists?workspace_id=...")
-        
+
         @task(2)
         def get_content_plans(self):
             self.client.get("/api/v1/content-plans?workspace_id=...")
-        
+
         @task(1)
         def generate_article(self):
             self.client.post("/api/v1/articles/generate", json={
                 "plan_id": "..."
             })
     ```
-    
+
     Run: `locust -f tests/performance/locustfile.py --users 100 --spawn-rate 10`
 
     B. **Database Performance Testing**:
@@ -229,13 +229,13 @@ phase:
     -- Test query performance
     EXPLAIN ANALYZE
     SELECT * FROM keywords WHERE list_id = '...' AND status = 'pending';
-    
+
     -- Ensure indexes are used
     -- Add indexes if needed
     ```
 
     3. **Security Audit**:
-    
+
     Checklist:
     - [ ] SQL injection prevention (parameterized queries)
     - [ ] XSS prevention (sanitize HTML output)
@@ -248,7 +248,7 @@ phase:
     - [ ] No secrets in logs
     - [ ] K8s security context configured
     - [ ] Network policies in place
-    
+
     Tools:
     - OWASP ZAP for penetration testing
     - Bandit for Python code security analysis
@@ -256,18 +256,18 @@ phase:
     - Trivy for container scanning
 
     4. **Production Deployment Guide**:
-    
+
     ```markdown
     # Production Deployment Guide
-    
+
     ## Prerequisites
     - Kubernetes cluster (v1.27+)
     - Helm 3.x
     - kubectl configured
     - Domain with SSL certificate
-    
+
     ## Steps
-    
+
     1. **Setup Secrets**:
        ```bash
        kubectl create secret generic auto-seo-secrets \
@@ -275,7 +275,7 @@ phase:
          --from-literal=db-password=... \
          --from-literal=openai-api-key=...
        ```
-    
+
     2. **Deploy Databases**:
        ```bash
        helm install postgresql bitnami/postgresql
@@ -283,22 +283,22 @@ phase:
        helm install clickhouse altinity/clickhouse-operator
        helm install minio minio/minio
        ```
-    
+
     3. **Deploy Services**:
        ```bash
        kubectl apply -f k8s/services/
        ```
-    
+
     4. **Deploy Frontend**:
        ```bash
        kubectl apply -f k8s/frontend/
        ```
-    
+
     5. **Setup Ingress**:
        ```bash
        kubectl apply -f k8s/ingress/
        ```
-    
+
     6. **Verify**:
        ```bash
        kubectl get pods -n auto-seo
