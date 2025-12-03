@@ -35,6 +35,9 @@ def get_test_settings() -> Settings:
         S3_ACCESS_KEY="minioadmin",
         S3_SECRET_KEY="minioadmin",
         S3_BUCKET="test-bucket",
+        AHREFS_API_KEY="",
+        SEMRUSH_API_KEY="",
+        REDIS_URL="redis://localhost:6379/0",
     )
 
 
