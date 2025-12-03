@@ -186,3 +186,128 @@ class TestKeywordListEndpoints:
             headers=auth_headers,
         )
         assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    @patch("app.api.v1.keyword_lists.StorageService")
+    async def test_create_and_get_keyword_list(
+        self,
+        mock_storage_class,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test creating and then retrieving a keyword list."""
+        # Mock storage service
+        mock_storage = AsyncMock()
+        mock_storage.upload_file = AsyncMock(return_value="s3://test-bucket/file.csv")
+        mock_storage_class.return_value = mock_storage
+
+        # Create list
+        with patch("app.api.v1.keyword_lists.process_keywords_background"):
+            response = await async_client.post(
+                "/api/v1/keyword-lists",
+                data={
+                    "name": "Test Keyword List",
+                    "workspace_id": str(test_workspace_id),
+                },
+                files={"file": ("keywords.csv", b"keyword\napple\n", "text/csv")},
+                headers=auth_headers,
+            )
+
+        assert response.status_code == 201
+        created = response.json()
+        list_id = created["id"]
+
+        # Get the list
+        response = await async_client.get(
+            f"/api/v1/keyword-lists/{list_id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == list_id
+        assert data["name"] == "Test Keyword List"
+
+    @pytest.mark.asyncio
+    @patch("app.api.v1.keyword_lists.StorageService")
+    async def test_create_and_delete_keyword_list(
+        self,
+        mock_storage_class,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test creating and then deleting a keyword list."""
+        # Mock storage service
+        mock_storage = AsyncMock()
+        mock_storage.upload_file = AsyncMock(return_value="s3://test-bucket/file.csv")
+        mock_storage_class.return_value = mock_storage
+
+        # Create list
+        with patch("app.api.v1.keyword_lists.process_keywords_background"):
+            response = await async_client.post(
+                "/api/v1/keyword-lists",
+                data={
+                    "name": "To Be Deleted",
+                    "workspace_id": str(test_workspace_id),
+                },
+                files={"file": ("keywords.csv", b"keyword\napple\n", "text/csv")},
+                headers=auth_headers,
+            )
+
+        assert response.status_code == 201
+        list_id = response.json()["id"]
+
+        # Delete the list
+        response = await async_client.delete(
+            f"/api/v1/keyword-lists/{list_id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+        # Verify it's deleted
+        response = await async_client.get(
+            f"/api/v1/keyword-lists/{list_id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    @patch("app.api.v1.keyword_lists.StorageService")
+    async def test_list_keyword_lists_with_filter(
+        self,
+        mock_storage_class,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test listing keyword lists with pagination."""
+        # Mock storage service
+        mock_storage = AsyncMock()
+        mock_storage.upload_file = AsyncMock(return_value="s3://test-bucket/file.csv")
+        mock_storage_class.return_value = mock_storage
+
+        # Create multiple lists
+        with patch("app.api.v1.keyword_lists.process_keywords_background"):
+            for i in range(3):
+                await async_client.post(
+                    "/api/v1/keyword-lists",
+                    data={
+                        "name": f"Test List {i}",
+                        "workspace_id": str(test_workspace_id),
+                    },
+                    files={"file": ("keywords.csv", b"keyword\napple\n", "text/csv")},
+                    headers=auth_headers,
+                )
+
+        # List with pagination
+        response = await async_client.get(
+            f"/api/v1/keyword-lists?workspace_id={test_workspace_id}&page=1&page_size=2",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 3
+        assert len(data["data"]) == 2
+        assert data["page"] == 1
+        assert data["page_size"] == 2
