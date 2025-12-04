@@ -47,3 +47,10 @@ async def get_current_user(
             detail="Invalid user ID in token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def get_current_user_id(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> UUID:
+    """Get current user ID from JWT token."""
+    return current_user.id
