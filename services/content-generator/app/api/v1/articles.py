@@ -1,10 +1,13 @@
 """Articles API endpoints."""
 
+import json
 import logging
+import os
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, get_current_user
@@ -43,9 +46,6 @@ async def generate_article(
     This endpoint takes a content plan ID, retrieves the plan details,
     and uses OpenAI GPT-3.5 to generate SEO-optimized content.
     """
-    import os
-    from sqlalchemy import select, text
-
     # Determine schema based on database type
     db_url = os.environ.get("DATABASE_URL", "")
     is_sqlite = "sqlite" in db_url
@@ -84,7 +84,6 @@ async def generate_article(
 
     # Parse target_keywords - it could be JSON or array
     if isinstance(target_keywords, str):
-        import json
         try:
             keywords = json.loads(target_keywords)
         except (json.JSONDecodeError, TypeError):

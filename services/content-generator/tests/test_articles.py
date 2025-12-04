@@ -45,6 +45,7 @@ class TestArticleEndpoints:
         data = response.json()
         assert data["title"] == "Test SEO Article"
         assert data["status"] == "draft"
+        # Default ai_model_used should be 'gpt-3.5-turbo' when not specified
         assert data["ai_model_used"] == "gpt-3.5-turbo"
         assert data["content"] == "# Test Content\n\nThis is a test article."
 
