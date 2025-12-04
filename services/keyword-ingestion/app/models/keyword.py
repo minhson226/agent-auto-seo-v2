@@ -60,6 +60,16 @@ class Keyword(Base):
     keyword_difficulty: Mapped[Optional[Decimal]] = mapped_column(
         Numeric(5, 2), nullable=True
     )
+    # PHASE-004: New enrichment fields
+    cpc: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    clicks: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    intent_confidence: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(5, 2), nullable=True
+    )
+    trend_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    last_enriched_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     metadata_: Mapped[dict] = mapped_column(
         "metadata", get_json_type(), default=dict, server_default="{}"
     )

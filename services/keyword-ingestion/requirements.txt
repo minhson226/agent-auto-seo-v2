@@ -13,9 +13,14 @@ minio>=7.2.0
 pandas>=2.1.0
 prometheus-client>=0.19.0
 
+# PHASE-004: API Connectors and ML
+httpx>=0.25.0
+celery>=5.3.0
+redis>=5.0.0
+pytrends>=4.9.0
+
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
-httpx>=0.25.0
 aiosqlite>=0.19.0

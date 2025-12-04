@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     # File upload limits
     MAX_FILE_SIZE_MB: int = 10
 
+    # PHASE-004: API Connectors
+    AHREFS_API_KEY: str = ""
+    SEMRUSH_API_KEY: str = ""
+
+    # PHASE-004: Redis for Celery
+    REDIS_URL: str = "redis://localhost:6379/0"
+
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
 
