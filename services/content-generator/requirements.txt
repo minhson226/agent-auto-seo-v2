@@ -14,6 +14,17 @@ prometheus-client>=0.19.0
 # OpenAI for content generation
 openai>=1.3.0
 
+# LLM Gateway - Additional providers (optional)
+anthropic>=0.18.0
+google-generativeai>=0.3.0
+
+# Celery for scheduled tasks
+celery>=5.3.0
+redis>=5.0.0
+
+# HTTP client for image APIs
+httpx>=0.25.0
+
 # MinIO/S3 for image storage
 boto3>=1.34.0
 aioboto3>=12.0.0
@@ -23,4 +34,3 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 aiosqlite>=0.19.0
-httpx>=0.25.0

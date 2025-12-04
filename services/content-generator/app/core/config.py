@@ -36,6 +36,19 @@ class Settings(BaseSettings):
     OPENAI_MAX_TOKENS: int = 2000
     OPENAI_TEMPERATURE: float = 0.7
 
+    # LLM Provider API Keys (for LLM Gateway)
+    ANTHROPIC_API_KEY: str = ""
+    GOOGLE_API_KEY: str = ""
+    XAI_API_KEY: str = ""
+
+    # Image API Keys
+    PEXELS_API_KEY: str = ""
+    UNSPLASH_ACCESS_KEY: str = ""
+
+    # Celery Settings
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+
     # S3/MinIO Settings
     S3_ENDPOINT: str = "http://localhost:9002"
     S3_ACCESS_KEY: str = "minioadmin"
