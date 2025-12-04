@@ -274,6 +274,171 @@ class TestArticleEndpoints:
         assert response.status_code == 404
 
 
+class TestImageUpload:
+    """Tests for image upload functionality."""
+
+    @pytest.mark.asyncio
+    async def test_upload_image_success(
+        self,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test successful image upload to an article."""
+        # Create article first
+        create_response = await async_client.post(
+            "/api/v1/articles",
+            json={
+                "title": "Article with Image",
+                "workspace_id": str(test_workspace_id),
+            },
+            headers=auth_headers,
+        )
+        article_id = create_response.json()["id"]
+
+        # Upload image
+        image_content = b"fake image content for testing"
+        files = {"file": ("test-image.jpg", image_content, "image/jpeg")}
+        response = await async_client.post(
+            f"/api/v1/articles/{article_id}/images",
+            files=files,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["article_id"] == article_id
+        assert data["original_filename"] == "test-image.jpg"
+        assert data["content_type"] == "image/jpeg"
+        assert data["size_bytes"] == len(image_content)
+        assert "storage_path" in data
+        assert data["storage_path"].startswith(f"articles/{article_id}/")
+
+    @pytest.mark.asyncio
+    async def test_upload_image_article_not_found(
+        self,
+        async_client: AsyncClient,
+        auth_headers,
+    ):
+        """Test uploading image to non-existent article returns 404."""
+        files = {"file": ("test.jpg", b"content", "image/jpeg")}
+        response = await async_client.post(
+            f"/api/v1/articles/{uuid4()}/images",
+            files=files,
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_upload_image_invalid_type(
+        self,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test uploading non-image file returns 400."""
+        # Create article first
+        create_response = await async_client.post(
+            "/api/v1/articles",
+            json={
+                "title": "Article",
+                "workspace_id": str(test_workspace_id),
+            },
+            headers=auth_headers,
+        )
+        article_id = create_response.json()["id"]
+
+        # Try to upload non-image file
+        files = {"file": ("document.pdf", b"pdf content", "application/pdf")}
+        response = await async_client.post(
+            f"/api/v1/articles/{article_id}/images",
+            files=files,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 400
+        assert "Invalid image type" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_delete_image(
+        self,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test deleting an image from an article."""
+        # Create article
+        create_response = await async_client.post(
+            "/api/v1/articles",
+            json={
+                "title": "Article for Image Delete",
+                "workspace_id": str(test_workspace_id),
+            },
+            headers=auth_headers,
+        )
+        article_id = create_response.json()["id"]
+
+        # Upload image
+        files = {"file": ("to-delete.png", b"image data", "image/png")}
+        upload_response = await async_client.post(
+            f"/api/v1/articles/{article_id}/images",
+            files=files,
+            headers=auth_headers,
+        )
+        image_id = upload_response.json()["id"]
+
+        # Delete image
+        response = await async_client.delete(
+            f"/api/v1/articles/{article_id}/images/{image_id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+        # Verify image is gone from article
+        get_response = await async_client.get(
+            f"/api/v1/articles/{article_id}",
+            headers=auth_headers,
+        )
+        assert len(get_response.json()["images"]) == 0
+
+    @pytest.mark.asyncio
+    async def test_get_article_with_images(
+        self,
+        async_client: AsyncClient,
+        auth_headers,
+        test_workspace_id,
+    ):
+        """Test getting an article includes its images."""
+        # Create article
+        create_response = await async_client.post(
+            "/api/v1/articles",
+            json={
+                "title": "Article with Multiple Images",
+                "workspace_id": str(test_workspace_id),
+            },
+            headers=auth_headers,
+        )
+        article_id = create_response.json()["id"]
+
+        # Upload multiple images
+        for i in range(2):
+            files = {"file": (f"image{i}.jpg", b"image content", "image/jpeg")}
+            await async_client.post(
+                f"/api/v1/articles/{article_id}/images",
+                files=files,
+                headers=auth_headers,
+            )
+
+        # Get article with images
+        response = await async_client.get(
+            f"/api/v1/articles/{article_id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["images"]) == 2
+
+
 class TestContentGeneration:
     """Tests for content generation functionality."""
 
@@ -290,6 +455,79 @@ class TestContentGeneration:
             headers=auth_headers,
         )
         assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_generate_article_success(
+        self,
+        async_client: AsyncClient,
+        auth_headers,
+        db_session,
+        test_workspace_id,
+    ):
+        """Test successful article generation from a content plan.
+        
+        This test verifies the full flow:
+        1. Content plan is retrieved
+        2. Content is generated using GPT-3.5 (mocked in test)
+        3. Article is saved to database with cost tracking
+        4. Event is published (using mock publisher)
+        """
+        from sqlalchemy import text
+        import json
+        
+        # Create a mock content plan in the database
+        plan_id = uuid4()
+        await db_session.execute(
+            text("""
+                CREATE TABLE IF NOT EXISTS content_plans (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    target_keywords TEXT,
+                    estimated_word_count INTEGER
+                )
+            """)
+        )
+        await db_session.execute(
+            text("""
+                INSERT INTO content_plans (id, workspace_id, title, target_keywords, estimated_word_count)
+                VALUES (:id, :workspace_id, :title, :keywords, :word_count)
+            """),
+            {
+                "id": str(plan_id),
+                "workspace_id": str(test_workspace_id),
+                "title": "Complete Guide to SEO Optimization",
+                "keywords": json.dumps(["seo", "optimization", "search engine"]),
+                "word_count": 1500,
+            }
+        )
+        await db_session.commit()
+
+        # Call generate endpoint
+        response = await async_client.post(
+            "/api/v1/articles/generate",
+            json={"plan_id": str(plan_id)},
+            headers=auth_headers,
+        )
+        
+        assert response.status_code == 201
+        data = response.json()
+        
+        # Verify response contains expected fields
+        assert data["title"] == "Complete Guide to SEO Optimization"
+        assert data["status"] == "draft"
+        assert data["content"] is not None
+        assert data["word_count"] is not None
+        assert data["word_count"] > 0
+        # The mock generator returns model name with -mock suffix
+        assert "gpt-3.5-turbo" in data["ai_model_used"]
+        # Cost should be tracked
+        assert data["cost_usd"] is not None
+        # Metadata should contain generation info
+        assert data["metadata"] is not None
+        assert "tokens_used" in data["metadata"]
+        assert "generated_from_plan" in data["metadata"]
+        assert data["metadata"]["generated_from_plan"] == str(plan_id)
 
 
 class TestHealthEndpoints:
