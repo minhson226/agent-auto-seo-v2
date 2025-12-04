@@ -1,40 +1,12 @@
 """Schemas for SEO Scorer Service."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-
-# Default SEO checklist structure
-DEFAULT_CHECKLIST = {
-    "title_contains_keyword": False,
-    "h1_present": False,
-    "h2_count_adequate": False,
-    "keyword_density_ok": False,
-    "images_have_alt": False,
-    "meta_description": False,
-    "internal_links": False,
-    "external_links": False,
-    "word_count_adequate": False,
-    "readability_ok": False,
-}
-
-
-class ChecklistItem(BaseModel):
-    """Individual checklist item."""
-
-    title_contains_keyword: bool = False
-    h1_present: bool = False
-    h2_count_adequate: bool = False
-    keyword_density_ok: bool = False
-    images_have_alt: bool = False
-    meta_description: bool = False
-    internal_links: bool = False
-    external_links: bool = False
-    word_count_adequate: bool = False
-    readability_ok: bool = False
+from app.core.constants import DEFAULT_CHECKLIST
 
 
 class SeoScoreCreate(BaseModel):

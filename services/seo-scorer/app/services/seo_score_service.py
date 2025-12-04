@@ -7,7 +7,8 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.seo_score import SeoScore, DEFAULT_CHECKLIST
+from app.core.constants import DEFAULT_CHECKLIST
+from app.models.seo_score import SeoScore
 from app.schemas.seo_score import SeoScoreCreate, SeoScoreUpdate
 
 logger = logging.getLogger(__name__)

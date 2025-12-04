@@ -3,7 +3,7 @@
 import pytest
 from uuid import uuid4
 
-from app.schemas.seo_score import DEFAULT_CHECKLIST
+from app.core.constants import DEFAULT_CHECKLIST
 
 
 class TestSeoScoresAPI:

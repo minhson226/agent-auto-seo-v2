@@ -4,7 +4,8 @@ import pytest
 import pytest_asyncio
 from uuid import uuid4
 
-from app.models.seo_score import SeoScore, DEFAULT_CHECKLIST
+from app.core.constants import DEFAULT_CHECKLIST
+from app.models.seo_score import SeoScore
 from app.schemas.seo_score import SeoScoreCreate, SeoScoreUpdate
 from app.services.seo_score_service import SeoScoreService
 

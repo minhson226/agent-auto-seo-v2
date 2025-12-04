@@ -5,27 +5,13 @@ import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import JSON
 
+from app.core.constants import DEFAULT_CHECKLIST
 from app.db.base import Base
-
-
-# Default SEO checklist
-DEFAULT_CHECKLIST = {
-    "title_contains_keyword": False,
-    "h1_present": False,
-    "h2_count_adequate": False,
-    "keyword_density_ok": False,
-    "images_have_alt": False,
-    "meta_description": False,
-    "internal_links": False,
-    "external_links": False,
-    "word_count_adequate": False,
-    "readability_ok": False,
-}
 
 
 def _is_sqlite() -> bool:
