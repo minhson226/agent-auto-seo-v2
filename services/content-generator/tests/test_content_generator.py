@@ -2,10 +2,13 @@
 
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
 from app.services.content_generator import ContentGenerator
+from app.services.event_publisher import EventPublisher
+from app.services.image_storage import ImageStorageService
 
 
 class TestContentGenerator:
@@ -73,16 +76,28 @@ class TestContentGenerator:
         assert generator._count_words("") == 0
 
     @pytest.mark.asyncio
-    async def test_generate_article_no_api_key(self):
-        """Test generation fails without API key."""
-        generator = ContentGenerator(api_key="")
-        generator.client = None  # Simulate no client
+    async def test_generate_article_no_api_key_returns_mock(self):
+        """Test generation returns mock content without API key.
 
-        with pytest.raises(ValueError, match="OpenAI API key not configured"):
-            await generator.generate_article(
-                title="Test",
-                target_keywords=[],
-            )
+        When no API key is configured, the ContentGenerator should return
+        mock content instead of failing. This allows tests to run in CI
+        without real API credentials.
+        """
+        generator = ContentGenerator(api_key="")
+
+        result = await generator.generate_article(
+            title="Test Article",
+            target_keywords=["seo", "content"],
+        )
+
+        # Should return mock content, not raise an error
+        assert result.content is not None
+        assert "Test Article" in result.content
+        assert "-mock" in result.model  # Model name should indicate mock
+        assert result.word_count > 0
+        assert result.cost_usd >= Decimal("0")
+        assert "prompt_tokens" in result.tokens_used
+        assert "completion_tokens" in result.tokens_used
 
     @pytest.mark.asyncio
     async def test_generate_article_success(self):
@@ -124,3 +139,153 @@ class TestContentGenerator:
             assert result.tokens_used["prompt_tokens"] == 100
             assert result.tokens_used["completion_tokens"] == 500
             assert result.word_count == 6  # "Test Article This is generated content"
+
+
+class TestEventPublisherMock:
+    """Tests for EventPublisher mock mode functionality."""
+
+    @pytest.mark.asyncio
+    async def test_mock_mode_initialization(self):
+        """Test EventPublisher initializes in mock mode correctly."""
+        publisher = EventPublisher(mock_mode=True)
+        assert publisher.mock_mode is True
+        assert publisher.published_events == []
+
+    @pytest.mark.asyncio
+    async def test_mock_connect_does_not_fail(self):
+        """Test that connect() doesn't fail in mock mode."""
+        publisher = EventPublisher(mock_mode=True)
+        await publisher.connect()  # Should not raise
+        assert publisher.mock_mode is True
+
+    @pytest.mark.asyncio
+    async def test_mock_publish_stores_events(self):
+        """Test that publish stores events in mock mode."""
+        publisher = EventPublisher(mock_mode=True)
+        await publisher.connect()
+
+        workspace_id = uuid4()
+        await publisher.publish(
+            "article.generated",
+            {"article_id": str(uuid4()), "title": "Test Article"},
+            workspace_id=workspace_id,
+        )
+
+        assert len(publisher.published_events) == 1
+        event = publisher.published_events[0]
+        assert event["event_type"] == "article.generated"
+        assert event["workspace_id"] == str(workspace_id)
+        assert "article_id" in event["payload"]
+        assert event["payload"]["title"] == "Test Article"
+
+    @pytest.mark.asyncio
+    async def test_mock_clear_events(self):
+        """Test clearing published events."""
+        publisher = EventPublisher(mock_mode=True)
+        await publisher.publish("test.event", {"key": "value"})
+        assert len(publisher.published_events) == 1
+
+        publisher.clear_events()
+        assert len(publisher.published_events) == 0
+
+    @pytest.mark.asyncio
+    async def test_mock_disconnect_does_not_fail(self):
+        """Test that disconnect() doesn't fail in mock mode."""
+        publisher = EventPublisher(mock_mode=True)
+        await publisher.connect()
+        await publisher.disconnect()  # Should not raise
+
+
+class TestImageStorageMock:
+    """Tests for ImageStorageService mock mode functionality."""
+
+    @pytest.mark.asyncio
+    async def test_mock_mode_initialization(self):
+        """Test ImageStorageService initializes in mock mode correctly."""
+        storage = ImageStorageService(mock_mode=True)
+        assert storage.mock_mode is True
+        assert storage.mock_storage == {}
+
+    @pytest.mark.asyncio
+    async def test_mock_upload_stores_image(self):
+        """Test that upload stores image in mock mode."""
+        storage = ImageStorageService(mock_mode=True)
+        article_id = uuid4()
+        content = b"fake image content"
+
+        path = await storage.upload_image(
+            article_id=article_id,
+            file_content=content,
+            original_filename="test.jpg",
+            content_type="image/jpeg",
+        )
+
+        assert path.startswith(f"articles/{article_id}/")
+        assert path.endswith(".jpg")
+        assert storage.mock_storage[path] == content
+
+    @pytest.mark.asyncio
+    async def test_mock_delete_removes_image(self):
+        """Test that delete removes image in mock mode."""
+        storage = ImageStorageService(mock_mode=True)
+        article_id = uuid4()
+
+        # Upload first
+        path = await storage.upload_image(
+            article_id=article_id,
+            file_content=b"content",
+            original_filename="test.png",
+            content_type="image/png",
+        )
+        assert path in storage.mock_storage
+
+        # Delete
+        result = await storage.delete_image(path)
+        assert result is True
+        assert path not in storage.mock_storage
+
+    @pytest.mark.asyncio
+    async def test_mock_delete_nonexistent_returns_false(self):
+        """Test that deleting non-existent image returns False."""
+        storage = ImageStorageService(mock_mode=True)
+        result = await storage.delete_image("nonexistent/path.jpg")
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_mock_get_image_url_returns_mock_url(self):
+        """Test that get_image_url returns mock URL."""
+        storage = ImageStorageService(mock_mode=True)
+        url = await storage.get_image_url("articles/123/image.jpg", expires_in=3600)
+
+        assert url.startswith("mock://storage/")
+        assert "articles/123/image.jpg" in url
+        assert "expires=3600" in url
+
+    @pytest.mark.asyncio
+    async def test_mock_ensure_bucket_exists_does_not_fail(self):
+        """Test that ensure_bucket_exists doesn't fail in mock mode."""
+        storage = ImageStorageService(mock_mode=True)
+        await storage.ensure_bucket_exists()  # Should not raise
+
+    @pytest.mark.asyncio
+    async def test_mock_clear_storage(self):
+        """Test clearing mock storage."""
+        storage = ImageStorageService(mock_mode=True)
+
+        # Upload some images
+        await storage.upload_image(
+            article_id=uuid4(),
+            file_content=b"content1",
+            original_filename="test1.jpg",
+            content_type="image/jpeg",
+        )
+        await storage.upload_image(
+            article_id=uuid4(),
+            file_content=b"content2",
+            original_filename="test2.jpg",
+            content_type="image/jpeg",
+        )
+        assert len(storage.mock_storage) == 2
+
+        storage.clear_storage()
+        assert len(storage.mock_storage) == 0

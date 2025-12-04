@@ -1,4 +1,11 @@
-"""Pytest configuration and fixtures."""
+"""Pytest configuration and fixtures.
+
+This module configures the test environment to use mock/fake implementations
+of external services (OpenAI, RabbitMQ, S3/MinIO) instead of real network calls.
+This ensures tests can pass in CI without real secrets being set.
+
+See tests/README.md for more details on how external services are mocked.
+"""
 
 import asyncio
 import os
@@ -6,8 +13,12 @@ from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
-# Set DATABASE_URL before importing models
+# Set test environment variables before importing application modules
+# This ensures settings are configured for testing before any code loads
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["OPENAI_API_KEY"] = ""  # Empty key triggers mock mode
+os.environ["RABBITMQ_URL"] = "mock://localhost:5672/"  # Mock RabbitMQ
+os.environ["S3_ENDPOINT"] = "mock://localhost:9000"  # Mock S3
 
 import pytest
 import pytest_asyncio
@@ -24,17 +35,23 @@ from app.db.session import get_db
 from main import app
 
 
-# Test settings
+# Test settings - configured to use mock services
 def get_test_settings() -> Settings:
-    """Get test settings."""
+    """Get test settings with mock service configurations.
+
+    Returns settings that trigger mock mode for all external services:
+    - OpenAI: Empty API key returns mock generated content
+    - RabbitMQ: mock:// URL prevents real connection
+    - S3: mock:// endpoint stores images in memory
+    """
     return Settings(
         DATABASE_URL="sqlite+aiosqlite:///:memory:",
         JWT_SECRET_KEY="test-secret-key",
-        RABBITMQ_URL="amqp://guest:guest@localhost:5672/",
-        OPENAI_API_KEY="test-openai-key",
-        S3_ENDPOINT="http://localhost:9002",
-        S3_ACCESS_KEY="minioadmin",
-        S3_SECRET_KEY="minioadmin_secret",
+        RABBITMQ_URL="mock://localhost:5672/",
+        OPENAI_API_KEY="",  # Empty triggers mock content generation
+        S3_ENDPOINT="mock://localhost:9000",
+        S3_ACCESS_KEY="mock-access-key",
+        S3_SECRET_KEY="mock-secret-key",
     )
 
 
