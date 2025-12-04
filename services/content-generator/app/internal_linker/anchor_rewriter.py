@@ -91,7 +91,7 @@ Requirements:
 - Use "{keyword}" as the anchor text exactly
 - Return only the rewritten sentence with HTML link
 
-Example output format: "This is a sentence with <a href="url">anchor text</a> in it."
+Example output format: 'This is a sentence with <a href="url">anchor text</a> in it.'
 """
 
             response = await self._llm_gateway.generate(

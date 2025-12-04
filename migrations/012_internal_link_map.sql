@@ -38,6 +38,8 @@ CREATE INDEX IF NOT EXISTS idx_internal_link_map_is_applied ON internal_link_map
 
 -- Index for embedding similarity search (using IVFFlat for performance)
 -- This index enables efficient nearest neighbor searches
+-- Note: lists=100 is optimized for ~100k rows. For larger datasets,
+-- consider adjusting to lists = max(rows/1000, 10) for better performance
 CREATE INDEX IF NOT EXISTS idx_articles_embedding 
 ON articles USING ivfflat (embedding vector_cosine_ops) 
 WITH (lists = 100);

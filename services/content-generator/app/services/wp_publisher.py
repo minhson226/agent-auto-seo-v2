@@ -161,10 +161,10 @@ class WordPressPublisher:
         await event_publisher.publish(
             "article.published",
             {
-                "article_id": article.id,
+                "article_id": str(article.id),
                 "url": url,
                 "wp_post_id": wp_post_id,
-                "site_id": site.id,
+                "site_id": str(site.id),
             },
         )
 

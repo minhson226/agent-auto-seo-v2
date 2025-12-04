@@ -8,6 +8,9 @@ from app.internal_linker.models import InternalLinkOpportunity, RelatedArticle
 
 logger = logging.getLogger(__name__)
 
+# Maximum content length for embedding to avoid excessive processing
+MAX_CONTENT_LENGTH = 1000
+
 
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """Calculate cosine similarity between two vectors.
@@ -109,7 +112,7 @@ class SemanticInternalLinker:
             # Return a simple mock embedding based on text length
             import hashlib
 
-            hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
+            hash_val = int(hashlib.sha256(text.encode()).hexdigest(), 16)
             return [(hash_val >> i) % 256 / 256.0 for i in range(384)]
 
         model = self._get_model()
@@ -162,7 +165,7 @@ class SemanticInternalLinker:
 
                 # If no pre-computed embedding, compute it
                 if not embedding and article.content:
-                    embedding = self.encode(article.content[:1000])  # Limit text length
+                    embedding = self.encode(article.content[:MAX_CONTENT_LENGTH])
 
                 articles_with_embeddings.append({
                     "id": article.id,
@@ -198,7 +201,7 @@ class SemanticInternalLinker:
             List of related articles sorted by similarity
         """
         # Encode the new article
-        new_embedding = self.encode(new_article_content[:1000])
+        new_embedding = self.encode(new_article_content[:MAX_CONTENT_LENGTH])
         if not new_embedding:
             logger.warning("Failed to encode new article content")
             return []

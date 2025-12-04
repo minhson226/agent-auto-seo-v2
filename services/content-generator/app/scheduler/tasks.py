@@ -221,14 +221,16 @@ async def _update_internal_links_async() -> Dict[str, Any]:
     linker = SemanticInternalLinker(mock_mode=True)
 
     for ws in workspaces:
-        workspace_id = UUID(ws["id"]) if isinstance(ws.get("id"), str) else ws.get("id")
-        if workspace_id:
-            try:
-                result = await linker.process_workspace(workspace_id)
-                results["workspaces_processed"] += 1
-                results["total_opportunities"] += result.get("opportunities_found", 0)
-            except Exception as e:
-                logger.error(f"Failed to process workspace {workspace_id}: {e}")
+        ws_id = ws.get("id")
+        if not ws_id:
+            continue
+        workspace_id = UUID(str(ws_id)) if not isinstance(ws_id, UUID) else ws_id
+        try:
+            result = await linker.process_workspace(workspace_id)
+            results["workspaces_processed"] += 1
+            results["total_opportunities"] += result.get("opportunities_found", 0)
+        except Exception as e:
+            logger.error(f"Failed to process workspace {workspace_id}: {e}")
 
     logger.info(
         f"Nightly internal links update complete: "

@@ -10,6 +10,20 @@ from app.internal_linker.models import InternalLinkOpportunity
 logger = logging.getLogger(__name__)
 
 
+def _get_target_keywords(article) -> List[str]:
+    """Extract target keywords from an article.
+
+    Args:
+        article: Article model instance
+
+    Returns:
+        List of target keywords
+    """
+    if not article.generation_metadata:
+        return []
+    return article.generation_metadata.get("target_keywords", [])
+
+
 class BasicInternalLinker:
     """Internal linker using basic string matching.
 
@@ -79,11 +93,7 @@ class BasicInternalLinker:
                     "id": article.id,
                     "title": article.title,
                     "content": article.content,
-                    "target_keywords": article.generation_metadata.get(
-                        "target_keywords", []
-                    )
-                    if article.generation_metadata
-                    else [],
+                    "target_keywords": _get_target_keywords(article),
                 }
                 for article in articles
             ]
