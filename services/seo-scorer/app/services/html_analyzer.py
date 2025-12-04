@@ -10,6 +10,12 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
+from app.core.constants import (
+    MIN_KEYWORD_DENSITY,
+    MAX_KEYWORD_DENSITY,
+    MIN_WORD_COUNT,
+)
+
 
 class HTMLAnalyzer:
     """Analyzer for extracting SEO-related data from HTML content."""
@@ -95,13 +101,13 @@ class HTMLAnalyzer:
             "h2_count": len(h2_tags),
             "h2_contains_keyword": keyword_in_h2,
             "keyword_density": keyword_density,
-            "keyword_density_ok": 0.5 <= keyword_density <= 3.0,
+            "keyword_density_ok": MIN_KEYWORD_DENSITY <= keyword_density <= MAX_KEYWORD_DENSITY,
             "images_count": len(images),
             "images_with_alt": images_data["with_alt"],
             "images_without_alt": images_data["without_alt"],
             "images_have_alt": images_data["all_have_alt"],
             "word_count": word_count,
-            "word_count_adequate": word_count >= 300,
+            "word_count_adequate": word_count >= MIN_WORD_COUNT,
             "internal_links": len(internal_links),
             "external_links": len(external_links),
             "has_internal_links": len(internal_links) > 0,

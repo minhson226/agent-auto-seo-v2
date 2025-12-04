@@ -6,6 +6,8 @@ using configurable weights.
 
 from typing import Any, Dict, Optional
 
+from app.core.constants import RECOMMENDED_WORD_COUNT
+
 
 class AutoScorer:
     """Automatic scorer for SEO analysis results."""
@@ -165,7 +167,7 @@ class AutoScorer:
 
         # Additional specific checks
         word_count = analysis.get("word_count", 0)
-        if word_count < 1500:
+        if word_count < RECOMMENDED_WORD_COUNT:
             if "low_word_count" not in issues:
                 issues.append("low_word_count")
 
@@ -187,7 +189,7 @@ class AutoScorer:
             "missing_keyword_in_h2": "Add the main keyword to H2 headings",
             "keyword_density_issue": "Adjust keyword usage to maintain 0.5-3% density",
             "missing_alt_tags": "Add alt text to all images",
-            "low_word_count": "Expand content to 1500+ words for better coverage",
+            "low_word_count": f"Expand content to {RECOMMENDED_WORD_COUNT}+ words for better coverage",
             "no_internal_links": "Add internal links to related content",
             "no_external_links": "Add authoritative external references",
             "missing_meta_description": "Add a meta description (150-160 characters)",

@@ -8,6 +8,11 @@ import logging
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from app.core.constants import (
+    AUTO_SCORE_THRESHOLD_APPROVED,
+    MAX_CORRECTION_ATTEMPTS,
+    RECOMMENDED_WORD_COUNT,
+)
 from app.services.auto_scorer import AutoScorer
 from app.services.event_publisher import event_publisher
 
@@ -16,12 +21,6 @@ logger = logging.getLogger(__name__)
 
 class TacticalCorrector:
     """Tactical corrector for automatic SEO issue correction."""
-
-    # Maximum correction attempts to prevent infinite loops
-    MAX_CORRECTION_ATTEMPTS = 3
-
-    # Score threshold below which correction is triggered
-    CORRECTION_THRESHOLD = 80
 
     def __init__(self, scorer: Optional[AutoScorer] = None):
         """Initialize the tactical corrector.
@@ -52,7 +51,7 @@ class TacticalCorrector:
         score = score_data.get("score", 0)
 
         # Check if score meets threshold
-        if score >= self.CORRECTION_THRESHOLD:
+        if score >= AUTO_SCORE_THRESHOLD_APPROVED:
             logger.info(
                 f"Article {article_id} score {score} meets threshold, "
                 f"approved for publishing"
@@ -66,10 +65,10 @@ class TacticalCorrector:
             }
 
         # Check if max corrections reached
-        if correction_attempt >= self.MAX_CORRECTION_ATTEMPTS:
+        if correction_attempt >= MAX_CORRECTION_ATTEMPTS:
             logger.warning(
                 f"Article {article_id} reached max correction attempts "
-                f"({self.MAX_CORRECTION_ATTEMPTS}), manual review required"
+                f"({MAX_CORRECTION_ATTEMPTS}), manual review required"
             )
             return {
                 "action": "manual_review_required",
@@ -187,7 +186,7 @@ class TacticalCorrector:
                 "Adjust keyword usage - aim for 0.5-3% density"
             ),
             "missing_alt_tags": "Add descriptive alt text to all images",
-            "low_word_count": "Expand content to 1500+ words",
+            "low_word_count": f"Expand content to {RECOMMENDED_WORD_COUNT}+ words",
             "no_internal_links": "Add internal links to related content",
             "no_external_links": "Add authoritative external references",
             "missing_meta_description": (
