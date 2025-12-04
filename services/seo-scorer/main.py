@@ -42,8 +42,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="SEO Scoring Engine for Auto-SEO Platform - Manual checklist-based scoring",
-    version="1.0.0",
+    description=(
+        "SEO Scoring Engine for Auto-SEO Platform - "
+        "Includes manual checklist-based scoring, auto HTML analysis, "
+        "auto scoring, tactical correction loop, and self-learning weight adjustment."
+    ),
+    version="2.0.0",
     openapi_url="/api/v1/openapi.json",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
