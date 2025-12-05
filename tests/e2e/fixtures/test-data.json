@@ -1,0 +1,24 @@
+{
+  "testUser": {
+    "email": "test@example.com",
+    "password": "testpassword123",
+    "firstName": "Test",
+    "lastName": "User"
+  },
+  "adminUser": {
+    "email": "admin@example.com",
+    "password": "adminpassword123",
+    "firstName": "Admin",
+    "lastName": "User"
+  },
+  "testWorkspace": {
+    "name": "Test Workspace",
+    "slug": "test-workspace"
+  },
+  "testSite": {
+    "name": "Example Site",
+    "domain": "example.com",
+    "wpUsername": "admin",
+    "wpAppPassword": "xxxx-xxxx-xxxx-xxxx"
+  }
+}

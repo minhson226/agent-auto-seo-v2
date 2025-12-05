@@ -67,3 +67,8 @@ temp/
 
 # Pip version specifier files (accidentally created by pip install)
 =*
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
