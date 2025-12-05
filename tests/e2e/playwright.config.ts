@@ -1,9 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 /**
  * Playwright configuration for Auto-SEO E2E tests.
  * See https://playwright.dev/docs/test-configuration
  */
+
+// Dashboard path can be configured via environment variable
+const dashboardPath = process.env.DASHBOARD_PATH || path.join(__dirname, '../../frontend/dashboard');
+
 export default defineConfig({
   testDir: './specs',
   fullyParallel: true,
@@ -46,7 +51,7 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: 'cd ../../frontend/dashboard && npm run dev',
+        command: `cd ${dashboardPath} && npm run dev`,
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 120000,

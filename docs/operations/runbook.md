@@ -367,7 +367,7 @@ kubectl port-forward svc/grafana 3000:3000 -n autoseo-prod
    ```sql
    SELECT pg_terminate_backend(pid) 
    FROM pg_stat_activity 
-   WHERE duration > interval '5 minutes';
+   WHERE state = 'active' AND now() - query_start > interval '5 minutes';
    ```
 
 3. Check connection pool settings

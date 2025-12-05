@@ -38,9 +38,13 @@ class AutoSEOUser(HttpUser):
                 response.success()
             else:
                 response.failure("No token in response")
-        else:
-            # Allow tests to continue even if login fails (for testing unauthenticated endpoints)
+        elif response.status_code in [401, 403]:
+            # Expected failure for non-existent test users - don't count as error
+            # Tests will continue with unauthenticated endpoints
             response.success()
+        else:
+            # Actual server errors should be tracked
+            response.failure(f"Login failed with status {response.status_code}")
     
     @task(10)
     def health_check(self):

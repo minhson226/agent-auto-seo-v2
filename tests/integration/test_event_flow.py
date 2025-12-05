@@ -7,7 +7,7 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class MockEventBus:
@@ -23,7 +23,7 @@ class MockEventBus:
             "event_type": event_type,
             "payload": payload,
             "workspace_id": str(workspace_id) if workspace_id else None,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         self.published_events.append(event)
         
