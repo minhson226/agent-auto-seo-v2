@@ -4,9 +4,10 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, String, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.database_utils import get_json_type, get_table_args
 from app.db.base import Base
 
 
@@ -14,7 +15,7 @@ class User(Base):
     """User model for authentication and authorization."""
 
     __tablename__ = "users"
-    __table_args__ = {"schema": "autoseo"}
+    __table_args__ = get_table_args()
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -36,7 +37,7 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
     metadata_: Mapped[dict] = mapped_column(
-        "metadata", JSONB, default=dict, server_default="{}"
+        "metadata", get_json_type(), default=dict, server_default="{}"
     )
 
     # Relationships

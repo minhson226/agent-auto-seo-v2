@@ -74,7 +74,7 @@ class TestAuthEndpoints:
     def test_get_current_user_no_token(self, client):
         """Test accessing protected endpoint without token."""
         response = client.get("/api/v1/auth/me")
-        assert response.status_code == 403  # No auth header
+        assert response.status_code == 401  # No auth header returns 401 Unauthorized
 
     def test_get_current_user_invalid_token(self, client):
         """Test accessing protected endpoint with invalid token."""
@@ -99,7 +99,7 @@ class TestWorkspaceEndpoints:
     def test_list_workspaces_no_auth(self, client):
         """Test listing workspaces without authentication."""
         response = client.get("/api/v1/workspaces")
-        assert response.status_code == 403
+        assert response.status_code == 401  # No auth returns 401 Unauthorized
 
     def test_create_workspace_no_auth(self, client):
         """Test creating workspace without authentication."""
@@ -108,7 +108,7 @@ class TestWorkspaceEndpoints:
             "slug": "test-workspace",
         }
         response = client.post("/api/v1/workspaces", json=workspace_data)
-        assert response.status_code == 403
+        assert response.status_code == 401  # No auth returns 401 Unauthorized
 
     def test_create_workspace_invalid_slug(self, client):
         """Test creating workspace with invalid slug."""
@@ -132,7 +132,7 @@ class TestSiteEndpoints:
         response = client.get(
             "/api/v1/workspaces/550e8400-e29b-41d4-a716-446655440000/sites"
         )
-        assert response.status_code == 403
+        assert response.status_code == 401  # No auth returns 401 Unauthorized
 
     def test_create_site_validation(self, client):
         """Test site creation validation."""
@@ -156,7 +156,7 @@ class TestApiKeyEndpoints:
         response = client.get(
             "/api/v1/workspaces/550e8400-e29b-41d4-a716-446655440000/api-keys"
         )
-        assert response.status_code == 403
+        assert response.status_code == 401  # No auth returns 401 Unauthorized
 
     def test_create_api_key_validation(self, client):
         """Test API key creation validation."""
