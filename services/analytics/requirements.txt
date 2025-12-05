@@ -9,6 +9,12 @@ httpx>=0.25.0
 clickhouse-connect>=0.8.0
 prometheus-client>=0.19.0
 
+# Google API Clients (for GA4 and GSC connectors)
+# Pinned to avoid breaking changes from major version updates
+google-analytics-data>=0.18.0,<1.0.0
+google-api-python-client>=2.100.0,<3.0.0
+google-auth>=2.23.0,<3.0.0
+
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
