@@ -1,0 +1,5 @@
+# Performance Testing Requirements
+
+locust>=2.20.0
+requests>=2.31.0
+gevent>=23.0.0
