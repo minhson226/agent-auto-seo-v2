@@ -1,7 +1,7 @@
 /**
  * Article editor component
  */
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { XMarkIcon, PhotoIcon, TrashIcon } from '@heroicons/react/24/outline';
 import * as contentAPI from '../../api/content';
@@ -13,48 +13,26 @@ interface ArticleEditorProps {
   onSuccess: () => void;
 }
 
-export default function ArticleEditor({
+// Helper component to handle form state
+function ArticleEditorForm({
   workspaceId,
   articleId,
+  initialData,
   onClose,
   onSuccess,
-}: ArticleEditorProps) {
+}: ArticleEditorProps & {
+  initialData: { title: string; content: string; status: string };
+}) {
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
+  const [formData, setFormData] = useState(initialData);
 
-  // Fetch article if editing
+  // Fetch article for images
   const articleQuery = useQuery({
     queryKey: ['article', articleId],
     queryFn: () => contentAPI.getArticle(articleId!),
     enabled: !!articleId,
   });
-
-  // Derive initial form data from query
-  const initialData = useMemo(() => {
-    if (articleQuery.data) {
-      return {
-        title: articleQuery.data.title,
-        content: articleQuery.data.content,
-        status: articleQuery.data.status,
-      };
-    }
-    return {
-      title: '',
-      content: '',
-      status: 'draft',
-    };
-  }, [articleQuery.data]);
-
-  const [formData, setFormData] = useState(initialData);
-  
-  // Sync formData with fetched data when it first loads
-  if (articleQuery.data && formData.title === '' && formData.content === '') {
-    setFormData({
-      title: articleQuery.data.title,
-      content: articleQuery.data.content,
-      status: articleQuery.data.status,
-    });
-  }
 
   const createArticle = useMutation({
     mutationFn: contentAPI.createArticle,
@@ -305,5 +283,54 @@ export default function ArticleEditor({
         </form>
       </div>
     </div>
+  );
+}
+
+// Wrapper component that fetches initial data
+export default function ArticleEditor({
+  workspaceId,
+  articleId,
+  onClose,
+  onSuccess,
+}: ArticleEditorProps) {
+  // Fetch article if editing
+  const articleQuery = useQuery({
+    queryKey: ['article', articleId],
+    queryFn: () => contentAPI.getArticle(articleId!),
+    enabled: !!articleId,
+  });
+
+  // Show loading state while fetching
+  if (articleId && articleQuery.isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="flex h-64 w-64 items-center justify-center rounded-lg bg-white">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Compute initial data from query
+  const initialData = articleQuery.data
+    ? {
+        title: articleQuery.data.title,
+        content: articleQuery.data.content,
+        status: articleQuery.data.status,
+      }
+    : {
+        title: '',
+        content: '',
+        status: 'draft',
+      };
+
+  return (
+    <ArticleEditorForm
+      workspaceId={workspaceId}
+      articleId={articleId}
+      initialData={initialData}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
   );
 }

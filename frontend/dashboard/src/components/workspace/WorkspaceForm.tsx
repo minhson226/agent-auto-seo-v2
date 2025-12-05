@@ -1,7 +1,7 @@
 /**
  * Workspace form component
  */
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useWorkspace } from '../../hooks/useWorkspace';
 
@@ -11,41 +11,22 @@ interface WorkspaceFormProps {
   onSuccess: () => void;
 }
 
-export default function WorkspaceForm({
+interface FormData {
+  name: string;
+  slug: string;
+  description: string;
+}
+
+// Form component that receives initial data
+function WorkspaceFormContent({
   workspaceId,
+  initialData,
   onClose,
   onSuccess,
-}: WorkspaceFormProps) {
-  const { workspaces, createWorkspace, updateWorkspace } = useWorkspace();
+}: WorkspaceFormProps & { initialData: FormData }) {
+  const { createWorkspace, updateWorkspace } = useWorkspace();
   const [error, setError] = useState('');
-
-  const existingWorkspace = workspaces.data?.find((w) => w.id === workspaceId);
-  
-  const initialData = useMemo(() => {
-    if (existingWorkspace) {
-      return {
-        name: existingWorkspace.name,
-        slug: existingWorkspace.slug,
-        description: existingWorkspace.description || '',
-      };
-    }
-    return {
-      name: '',
-      slug: '',
-      description: '',
-    };
-  }, [existingWorkspace]);
-
   const [formData, setFormData] = useState(initialData);
-
-  // Sync formData with existing workspace when it loads
-  if (existingWorkspace && formData.name === '' && formData.slug === '') {
-    setFormData({
-      name: existingWorkspace.name,
-      slug: existingWorkspace.slug,
-      description: existingWorkspace.description || '',
-    });
-  }
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -200,5 +181,49 @@ export default function WorkspaceForm({
         </form>
       </div>
     </div>
+  );
+}
+
+// Wrapper component that fetches workspace data and computes initial values
+export default function WorkspaceForm({
+  workspaceId,
+  onClose,
+  onSuccess,
+}: WorkspaceFormProps) {
+  const { workspaces } = useWorkspace();
+  
+  const existingWorkspace = workspaces.data?.find((w) => w.id === workspaceId);
+  
+  // Show loading while fetching
+  if (workspaceId && workspaces.isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-white">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Compute initial data
+  const initialData: FormData = existingWorkspace
+    ? {
+        name: existingWorkspace.name,
+        slug: existingWorkspace.slug,
+        description: existingWorkspace.description || '',
+      }
+    : {
+        name: '',
+        slug: '',
+        description: '',
+      };
+
+  return (
+    <WorkspaceFormContent
+      workspaceId={workspaceId}
+      initialData={initialData}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
   );
 }

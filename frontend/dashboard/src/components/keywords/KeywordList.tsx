@@ -2,6 +2,7 @@
  * Keyword list component
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TrashIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useKeywords } from '../../hooks/useKeywords';
 import { useWorkspaceStore } from '../../store/workspaceStore';
@@ -20,6 +21,7 @@ function getStatusBadgeColor(status: string) {
 }
 
 export default function KeywordList() {
+  const navigate = useNavigate();
   const { currentWorkspaceId } = useWorkspaceStore();
   const [page, setPage] = useState(1);
   const { keywordLists, deleteKeywordList } = useKeywords(
@@ -119,10 +121,7 @@ export default function KeywordList() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      // Navigate to keyword list details
-                      window.location.href = `/keywords/${list.id}`;
-                    }}
+                    onClick={() => navigate(`/keywords/${list.id}`)}
                     className="rounded p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                     title="View keywords"
                   >
