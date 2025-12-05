@@ -71,8 +71,8 @@ class ClickHouseClient:
 
     @staticmethod
     def url_hash(url: str) -> str:
-        """Generate MD5 hash of URL."""
-        return hashlib.md5(url.encode()).hexdigest()
+        """Generate SHA-256 hash of URL for secure identification."""
+        return hashlib.sha256(url.encode()).hexdigest()
 
     async def insert_performance(self, data: Dict[str, Any]) -> bool:
         """Insert performance data into fact_performance table."""
