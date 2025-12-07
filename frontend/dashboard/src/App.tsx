@@ -18,6 +18,7 @@ import Articles from './pages/Articles';
 import Publishing from './pages/Publishing';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import SystemStatus from './pages/SystemStatus';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ function App() {
             <Route path="articles" element={<Articles />} />
             <Route path="publishing" element={<Publishing />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="system-status" element={<SystemStatus />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 
