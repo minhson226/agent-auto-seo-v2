@@ -79,3 +79,43 @@ class TestLogging:
         response = client.get("/health")
         # Correlation ID should be in response headers
         assert "x-correlation-id" in response.headers or response.status_code == 200
+
+
+class TestDiagnostics:
+    """Tests for diagnostics endpoints."""
+
+    @patch("app.api.diagnostics.check_service_health")
+    async def test_diagnostics_endpoint(self, mock_check_health, client):
+        """Test diagnostics endpoint returns system health."""
+        # Mock the service health check to return healthy status
+        mock_check_health.return_value = {
+            "name": "Test Service",
+            "status": "healthy",
+            "url": "http://test:8080",
+            "response_time_ms": 10.5,
+            "details": {"status": "healthy"}
+        }
+        
+        response = client.get("/api/v1/diagnostics/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "overall_status" in data
+        assert "services" in data
+        assert "environment" in data
+        assert "build" in data
+
+    @patch("app.api.diagnostics.check_service_health")
+    async def test_health_summary_endpoint(self, mock_check_health, client):
+        """Test health summary endpoint."""
+        mock_check_health.return_value = {
+            "name": "test",
+            "status": "healthy",
+            "response_time_ms": 10.5,
+        }
+        
+        response = client.get("/api/v1/diagnostics/health-summary")
+        assert response.status_code == 200
+        data = response.json()
+        assert "healthy" in data
+        assert "total" in data
+        assert "services" in data

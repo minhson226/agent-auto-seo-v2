@@ -165,6 +165,45 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push Keyword Ingestion Service
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/keyword-ingestion
+          file: ./services/keyword-ingestion/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keyword-ingestion:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keyword-ingestion:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push SEO Strategy Service
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/seo-strategy
+          file: ./services/seo-strategy/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/seo-strategy:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/seo-strategy:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push SEO Scorer Service
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/seo-scorer
+          file: ./services/seo-scorer/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/seo-scorer:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/seo-scorer:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build summary
         run: |
           echo "✅ Docker images built and pushed successfully"

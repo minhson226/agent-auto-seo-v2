@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # Service URLs
     AUTH_SERVICE_URL: str = "http://localhost:8081"
     NOTIFICATION_SERVICE_URL: str = "http://localhost:8082"
+    KEYWORD_INGESTION_URL: str = "http://localhost:8083"
+    SEO_STRATEGY_URL: str = "http://localhost:8084"
+    SEO_SCORER_URL: str = "http://localhost:8085"
+    CONTENT_GENERATOR_URL: str = "http://localhost:8086"
+    ANALYTICS_URL: str = "http://localhost:8087"
 
     # Rate Limiting
     RATE_LIMIT_PER_USER_MINUTE: int = 100

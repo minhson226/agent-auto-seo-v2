@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.core.proxy import proxy_service
 from app.middleware.rate_limit import RateLimiter, RateLimitMiddleware
 from app.middleware.logging import RequestLoggingMiddleware
+from app.api.diagnostics import router as diagnostics_router
 
 settings = get_settings()
 
@@ -77,6 +78,9 @@ app.add_middleware(
 # Mount Prometheus metrics
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
+
+# Include diagnostics router
+app.include_router(diagnostics_router)
 
 
 @app.get("/health", tags=["Health"])

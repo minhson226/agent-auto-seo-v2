@@ -16,11 +16,41 @@ class ProxyService:
     """Service for proxying requests to backend services."""
 
     SERVICE_ROUTES: Dict[str, str] = {
+        # Auth Service - Authentication, Workspaces, Sites, API Keys
         "/api/v1/auth": settings.AUTH_SERVICE_URL,
         "/api/v1/workspaces": settings.AUTH_SERVICE_URL,
         "/api/v1/sites": settings.AUTH_SERVICE_URL,
         "/api/v1/api-keys": settings.AUTH_SERVICE_URL,
+        
+        # Notification Service
         "/api/v1/notifications": settings.NOTIFICATION_SERVICE_URL,
+        
+        # Keyword Ingestion Service - Keywords, Keyword Lists, Automation, Intent
+        "/api/v1/keyword-lists": settings.KEYWORD_INGESTION_URL,
+        "/api/v1/keywords": settings.KEYWORD_INGESTION_URL,
+        "/api/v1/keyword-automation": settings.KEYWORD_INGESTION_URL,
+        "/api/v1/intent": settings.KEYWORD_INGESTION_URL,
+        
+        # SEO Strategy Service - Topic Clusters, Content Plans, ML Automation
+        "/api/v1/topic-clusters": settings.SEO_STRATEGY_URL,
+        "/api/v1/content-plans": settings.SEO_STRATEGY_URL,
+        "/api/v1/ml-automation": settings.SEO_STRATEGY_URL,
+        
+        # Content Generator Service - Articles, LLM, Images, Scheduler, RAG, Publishing
+        "/api/v1/articles": settings.CONTENT_GENERATOR_URL,
+        "/api/v1/llm": settings.CONTENT_GENERATOR_URL,
+        "/api/v1/images": settings.CONTENT_GENERATOR_URL,
+        "/api/v1/scheduler": settings.CONTENT_GENERATOR_URL,
+        "/api/v1/rag": settings.CONTENT_GENERATOR_URL,
+        "/api/v1/publishing": settings.CONTENT_GENERATOR_URL,
+        
+        # SEO Scorer Service - SEO Scores, Auto Scoring
+        "/api/v1/seo-scores": settings.SEO_SCORER_URL,
+        "/api/v1/auto-scoring": settings.SEO_SCORER_URL,
+        
+        # Analytics Service - Analytics, Strategic Learning
+        "/api/v1/analytics": settings.ANALYTICS_URL,
+        "/api/v1/strategic-learning": settings.ANALYTICS_URL,
     }
 
     def __init__(self):
