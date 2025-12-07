@@ -90,7 +90,10 @@ phase:
 
     ## CONTEXT
 
-    The API Gateway now exposes a unified REST API at `/api/v1/*` (from PHASE-D01). Your task is to build the core admin dashboard that consumes this API, allowing users to authenticate and manage their workspaces, sites, keywords, and content.
+    The API Gateway now exposes a unified REST API at `/api/v1/*` (from
+    PHASE-D01). Your task is to build the core admin dashboard that consumes
+    this API, allowing users to authenticate and manage their workspaces,
+    sites, keywords, and content.
 
     **Current State:**
     - Frontend skeleton exists at `frontend/dashboard/`
@@ -313,7 +316,7 @@ phase:
 
     export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('auth_token');
-      
+
       if (!token) {
         return <Navigate to="/login" replace />;
       }
@@ -406,7 +409,7 @@ phase:
       });
 
       const updateWorkspace = useMutation({
-        mutationFn: ({ id, data }: { id: string; data: any }) => 
+        mutationFn: ({ id, data }: { id: string; data: any }) =>
           workspacesAPI.update(id, data),
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['workspaces'] });

@@ -84,7 +84,10 @@ phase:
 
     ## CONTEXT
 
-    The core dashboard is now functional (from PHASE-D02) with authentication, layout, and basic CRUD operations. Your task is to implement the advanced features that make the Auto-SEO platform powerful: visual clustering, content generation, SEO insights, analytics, and system monitoring.
+    The core dashboard is now functional (from PHASE-D02) with authentication,
+    layout, and basic CRUD operations. Your task is to implement the advanced
+    features that make the Auto-SEO platform powerful: visual clustering,
+    content generation, SEO insights, analytics, and system monitoring.
 
     **Current State:**
     - Core dashboard working (auth, layout, basic CRUD)
@@ -159,8 +162,8 @@ phase:
       return (
         <div className="flex gap-6">
           <KeywordPool keywords={keywords || []} />
-          <ClusterArea 
-            clusters={clusters || []} 
+          <ClusterArea
+            clusters={clusters || []}
             onDrop={handleDrop}
           />
         </div>
@@ -200,11 +203,11 @@ phase:
     // components/clustering/DroppableCluster.tsx
     import { useDrop } from 'react-dnd';
 
-    export function DroppableCluster({ 
-      cluster, 
-      onDrop 
-    }: { 
-      cluster: any; 
+    export function DroppableCluster({
+      cluster,
+      onDrop
+    }: {
+      cluster: any;
       onDrop: (keywordId: string, clusterId: string) => void;
     }) {
       const [{ isOver }, drop] = useDrop({
@@ -272,14 +275,14 @@ phase:
 
       return (
         <div className="space-y-4">
-          <select 
+          <select
             value={settings.model}
             onChange={(e) => setSettings({ ...settings, model: e.target.value })}
           >
             <option value="gpt-4o">GPT-4o (High Quality)</option>
             <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast)</option>
           </select>
-          
+
           <select
             value={settings.tone}
             onChange={(e) => setSettings({ ...settings, tone: e.target.value })}
@@ -311,7 +314,7 @@ phase:
       const { data: job } = useQuery({
         queryKey: ['generation-job', jobId],
         queryFn: () => articlesAPI.getJobStatus(jobId),
-        refetchInterval: (data) => 
+        refetchInterval: (data) =>
           data?.status === 'completed' || data?.status === 'failed' ? false : 2000,
       });
 
@@ -323,7 +326,7 @@ phase:
           </div>
           {job?.status === 'processing' && (
             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full"
                 style={{ width: `${job.progress}%` }}
               />
@@ -396,7 +399,7 @@ phase:
         <div className="p-6 bg-white rounded-lg shadow">
           <h3 className="text-xl font-bold mb-4">SEO Score</h3>
           <CircularProgress value={score.total} max={100} />
-          
+
           <div className="mt-6 space-y-3">
             <ScoreItem label="Title" score={score.breakdown.title} />
             <ScoreItem label="Meta Description" score={score.breakdown.meta} />
@@ -505,25 +508,25 @@ phase:
             <YAxis yAxisId="right" orientation="right" />
             <Tooltip />
             <Legend />
-            <Line 
+            <Line
               yAxisId="left"
-              type="monotone" 
-              dataKey="position" 
-              stroke="#8884d8" 
+              type="monotone"
+              dataKey="position"
+              stroke="#8884d8"
               name="Position"
             />
-            <Line 
+            <Line
               yAxisId="right"
-              type="monotone" 
-              dataKey="clicks" 
-              stroke="#82ca9d" 
+              type="monotone"
+              dataKey="clicks"
+              stroke="#82ca9d"
               name="Clicks"
             />
-            <Line 
+            <Line
               yAxisId="right"
-              type="monotone" 
-              dataKey="impressions" 
-              stroke="#ffc658" 
+              type="monotone"
+              dataKey="impressions"
+              stroke="#ffc658"
               name="Impressions"
             />
           </LineChart>
@@ -543,7 +546,7 @@ phase:
 
     export function AnalyticsPage() {
       const [dateRange, setDateRange] = useState('30d');
-      
+
       const { data: overview } = useQuery({
         queryKey: ['analytics', 'overview', dateRange],
         queryFn: () => analyticsAPI.getOverview(dateRange),
@@ -552,9 +555,9 @@ phase:
       return (
         <div className="p-6 space-y-6">
           <h1 className="text-3xl font-bold">Analytics</h1>
-          
+
           <SummaryCards data={overview?.summary} />
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4">Traffic Overview</h2>
             <PerformanceChart data={overview?.traffic} />
@@ -576,7 +579,7 @@ phase:
 
     export function NotificationsBell() {
       const [isOpen, setIsOpen] = useState(false);
-      
+
       const { data: notifications } = useQuery({
         queryKey: ['notifications'],
         queryFn: notificationsAPI.getAll,
@@ -594,7 +597,7 @@ phase:
               </span>
             )}
           </button>
-          
+
           {isOpen && (
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg">
               <NotificationsList notifications={notifications} />
@@ -623,13 +626,13 @@ phase:
       return (
         <div className="p-6 space-y-6">
           <h1 className="text-3xl font-bold">System Status</h1>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {status?.services.map((service: any) => (
               <ServiceCard key={service.name} service={service} />
             ))}
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4">Queue Depths</h2>
             <QueueMetrics queues={status?.queues} />

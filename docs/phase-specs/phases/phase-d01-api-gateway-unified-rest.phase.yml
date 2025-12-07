@@ -88,7 +88,11 @@ phase:
 
     ## CONTEXT
 
-    The Auto-SEO platform has multiple backend microservices (auth-service, keyword-ingestion, content-generator, seo-scorer, seo-strategy, analytics, notification-service) but lacks a unified API layer for the admin dashboard. Your task is to enhance the existing API Gateway to expose all platform features through a consistent REST API under `/api/v1/*`.
+    The Auto-SEO platform has multiple backend microservices (auth-service,
+    keyword-ingestion, content-generator, seo-scorer, seo-strategy, analytics,
+    notification-service) but lacks a unified API layer for the admin dashboard.
+    Your task is to enhance the existing API Gateway to expose all platform
+    features through a consistent REST API under `/api/v1/*`.
 
     **Current State:**
     - API Gateway exists at `services/api-gateway/`
