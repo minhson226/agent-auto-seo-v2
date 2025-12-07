@@ -219,27 +219,26 @@ jobs:
           echo "Path: /srv/apps/auto-seo"
 
       - name: Deploy to Production Server
-        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262  # v1.0.3
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
+          timeout: '60s'          # thời gian cho SSH handshake
+          command_timeout: '45m'  # cho phép docker compose pull + up chạy lâu
           script: |
             set -e
             echo "📁 Navigating to application directory"
             cd /srv/apps/auto-seo
 
-            echo "📥 Pulling latest code"
-            git fetch origin
-            # Verify the commit exists
-            if ! git cat-file -e ${{ github.sha }} 2>/dev/null; then
-              echo "Error: Commit ${{ github.sha }} not found"
-              exit 1
-            fi
-            git checkout ${{ github.sha }}
+            echo "📥 Pulling latest code from main"
+            git fetch origin main
+            git checkout main
+            git pull origin main
 
             echo "🏷️ Setting image tag"
-            export IMAGE_TAG=${{ needs.build-images.outputs.image_tag }}
+            export IMAGE_TAG="${{ needs.build-images.outputs.image_tag }}"
+
             # Update or add IMAGE_TAG to .env file
             if grep -q "^IMAGE_TAG=" .env 2>/dev/null; then
               sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env
@@ -247,10 +246,10 @@ jobs:
               echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
             fi
 
-            echo "🐳 Pulling Docker images"
+            echo "🐳 Pulling Docker images (prod)"
             docker compose -f docker-compose.prod.yml pull
 
-            echo "🔄 Restarting services"
+            echo "🔄 Restarting services (prod)"
             docker compose -f docker-compose.prod.yml up -d
 
             echo "⏳ Waiting for services to stabilize (30s)"
@@ -263,7 +262,6 @@ jobs:
         run: |
           echo "🏥 Running health checks"
 
-          # Try health endpoint first
           MAX_RETRIES=10
           RETRY_DELAY=5
 
@@ -293,11 +291,13 @@ jobs:
 
       - name: Post-deploy diagnostics (on failure)
         if: failure()
-        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262  # v1.0.3
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
+          timeout: '60s'
+          command_timeout: '15m'
           script: |
             echo "🔍 Gathering diagnostic information"
             cd /srv/apps/auto-seo
