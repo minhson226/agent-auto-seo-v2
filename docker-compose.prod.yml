@@ -316,6 +316,24 @@ services:
     networks:
       - autoseo-network
 
+  # Dashboard Frontend
+  dashboard:
+    image: ghcr.io/minhson226/agent-auto-seo-v2/dashboard:${IMAGE_TAG:-latest}
+    container_name: autoseo-dashboard
+    restart: unless-stopped
+    ports:
+      - "9100:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoseo-network
+
 volumes:
   postgres_data:
   redis_data:

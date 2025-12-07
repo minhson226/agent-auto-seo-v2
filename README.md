@@ -31,22 +31,31 @@ docker-compose ps
 
 ### Access Services
 
-| Service | URL | Default Credentials |
-|---------|-----|---------------------|
-| PostgreSQL | localhost:5432 | autoseo / autoseo_secret |
-| Redis | localhost:6379 | redis_secret |
-| ClickHouse | localhost:8123 | autoseo / clickhouse_secret |
-| MinIO Console | http://localhost:9001 | minioadmin / minioadmin_secret |
-| Grafana | http://localhost:3000 | admin / grafana_secret |
-| Prometheus | http://localhost:9090 | - |
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Dashboard** | http://localhost:9100 | Admin dashboard for managing the platform |
+| **API Gateway** | http://localhost:9101 | Unified API endpoint for all services |
+| PostgreSQL | localhost:5432 | Primary database (autoseo / autoseo_secret) |
+| Redis | localhost:6379 | Cache and rate limiting |
+| ClickHouse | localhost:8123 | Analytics database |
+| MinIO Console | http://localhost:9001 | Object storage (minioadmin / minioadmin_secret) |
+| Grafana | http://localhost:3000 | Monitoring dashboards (admin / grafana_secret) |
+| Prometheus | http://localhost:9090 | Metrics collection |
 
 ## 📁 Project Structure
 
 ```
 auto-seo/
+├── frontend/                 # Frontend applications
+│   └── dashboard/           # React admin dashboard
 ├── services/                 # Microservices
 │   ├── api-gateway/         # API Gateway service
 │   ├── auth-service/        # Authentication service
+│   ├── keyword-ingestion/   # Keyword research service
+│   ├── seo-strategy/        # SEO strategy & content planning
+│   ├── content-generator/   # AI content generation
+│   ├── seo-scorer/          # SEO scoring & analysis
+│   ├── analytics/           # Analytics & reporting
 │   └── notification-service/ # Notification service
 ├── infrastructure/          # Infrastructure configurations
 │   ├── postgres/            # PostgreSQL configs
@@ -73,23 +82,64 @@ auto-seo/
 
 Auto-SEO uses a microservices architecture with event-driven communication:
 
-- **API Gateway**: Request routing, rate limiting, authentication
+- **Dashboard**: React-based admin UI for managing the entire platform
+- **API Gateway**: Unified REST API, request routing, rate limiting, authentication
 - **Core Services**: Auth, Workspace Management, Notifications
-- **Domain Services**: Keyword Ingestion, SEO Strategy, Content Generation, Publishing, Analytics
+- **Domain Services**: Keyword Ingestion, SEO Strategy, Content Generation, SEO Scoring, Analytics
 - **Data Layer**: PostgreSQL, Redis, ClickHouse, MinIO
 
 See [Architecture Overview](docs/architecture/overview.md) for detailed documentation.
+
+## 🎯 Main User Workflows
+
+The dashboard provides end-to-end workflows for automated SEO content creation:
+
+### 1. Keyword Research & Ingestion
+- Upload keyword lists or integrate with keyword research tools
+- View keyword metrics (volume, difficulty, CPC)
+- Organize keywords into collections
+
+### 2. Topic Clustering
+- Drag-and-drop interface for grouping related keywords
+- AI-assisted clustering suggestions
+- Create topic groups for content planning
+
+### 3. Content Planning
+- Generate content plans from keyword clusters
+- Define article parameters (tone, length, structure)
+- Schedule content calendar
+
+### 4. Content Generation
+- AI-powered article generation using GPT-4 or other LLMs
+- Rich text editor for review and refinement
+- SEO metadata generation (title, description, keywords)
+
+### 5. SEO Scoring & Optimization
+- Automated SEO analysis of generated content
+- On-page SEO recommendations
+- Keyword density and placement optimization
+
+### 6. Publishing & Distribution
+- WordPress integration for direct publishing
+- Schedule publication dates
+- Track publishing status
+
+### 7. Analytics & Reporting
+- Performance metrics (traffic, rankings, conversions)
+- ROI tracking and cost analysis
+- Visual dashboards and reports
 
 ## 🛠️ Technology Stack
 
 | Category | Technologies |
 |----------|-------------|
-| Backend | Python 3.11+, FastAPI, Node.js, Go |
-| Databases | PostgreSQL 15+, Redis 7+, ClickHouse |
-| Storage | MinIO (S3-compatible) |
-| Container | Docker, Kubernetes |
-| CI/CD | GitHub Actions |
-| Monitoring | Prometheus, Grafana |
+| **Frontend** | React 19, TypeScript, Vite, TailwindCSS, React Query |
+| **Backend** | Python 3.11+, FastAPI, Node.js, Go |
+| **Databases** | PostgreSQL 15+, Redis 7+, ClickHouse |
+| **Storage** | MinIO (S3-compatible) |
+| **Container** | Docker, Kubernetes |
+| **CI/CD** | GitHub Actions |
+| **Monitoring** | Prometheus, Grafana |
 
 ## 📖 Documentation
 

@@ -11,6 +11,7 @@ import {
   KeyIcon,
   RectangleStackIcon,
   PaperAirplaneIcon,
+  ServerStackIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Articles', href: '/articles', icon: DocumentTextIcon },
   { name: 'Publishing', href: '/publishing', icon: PaperAirplaneIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
+  { name: 'System Status', href: '/system-status', icon: ServerStackIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
